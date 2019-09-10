@@ -323,8 +323,8 @@ int main()
 
 
     // print to the file for figures
-        ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/psi_DaughterGrows.txt");
-        ofstream filestream2("//Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/zeta_DaughterGrows.txt");
+        ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/psi_out_ICinc.txt");
+        ofstream filestream2("//Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/zeta_out_ICinc.txt");
 
 
 
@@ -539,7 +539,7 @@ int main()
 
 
         // print everything
-        sprintf(file_name, "/Users/aliheydari/Documents/Prions Project Data/DaughterGrowsCenter/cell_splitting_%d.vtk", n);
+        sprintf(file_name, "/Users/aliheydari/Documents/Prions Project Data/increase_Initial_val/cell_splitting_%d.vtk", n);
         my_octree.print_VTK_Format(file_name);
         my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
         my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
