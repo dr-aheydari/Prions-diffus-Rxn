@@ -7,5 +7,5 @@ this document will keep being updates as we keep adding more information about t
 
 # Contact
 
-[My Email](aliheydari@ucdavis.edu)
+[My Email](aliheydari@ucdavis.edu) <br >
 [My Website](http://www.ali-heydari.com)
