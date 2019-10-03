@@ -62,9 +62,9 @@ double D_psi = 0.001; // Diffusion coeffcient for "healthy" protein
 double D_zeta = 0.001; // Diffusion coeffcient for aggregate
 
 //rate
-double gamma_var = 0.5*0;
+double gamma_var = 0.001;
 double initial_pop = 10*0;
-double conversion_rate1 = 0.5*0;
+double conversion_rate1 = 0.9;
 double mu = 0.2 * 0;
 //double D_z = 0.001;
 
@@ -427,9 +427,6 @@ int main()
     ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_SoftDist_DStays2.txt");
     ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_SoftDist_DStays2.txt");
     
-    //        ofstream OGstream1("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/Original_SoftDist_DStays2.txt");
-    //        ofstream OGstream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/Original_SoftDist_DStays2.txt");
-    
     
     
     while (t <= T)
@@ -690,3 +687,13 @@ int main()
     
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
