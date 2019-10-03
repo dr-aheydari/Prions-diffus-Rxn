@@ -444,38 +444,41 @@ int main()
         bc_psi.setInterfaceValue(int_psi_neumann_value);
         
         
-        
-        ArrayV<double> psi_updated;
-        psi_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
-        
-        //#pragma omp parallel for
-        
-        
-        
-        for (int i = 0; i < psi_updated.size(); i++) //because we got adding array operator, just inbetween step
+        // at time step 0 we do not want to solve anything, just intital conditions
+        if (n > 0)
         {
-            // rhs
-            // for now we are doing Diffusion Only
-            psi_updated(i) =psi_n(i) + (initial_pop*dt) - (dt*conversion_rate1*(psi_n(i))*(psi_n(i))) + (2 *dt* gamma_var * zeta_n(i));// MOST RECENT -> DIFFUSION -> psi_n(i) + 2*gamma_var * zeta_nm1(i); // (alpha - beta*(psi_n(i))*(psi_n(i)) + gamma_var * zeta_m(i));//2 * gamma_var * zeta_m(i))
+            ArrayV<double> psi_updated;
+            psi_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
             
+            //#pragma omp parallel for
+            
+            
+            
+            for (int i = 0; i < psi_updated.size(); i++) //because we got adding array operator, just inbetween step
+            {
+                // rhs
+                // for now we are doing Diffusion Only
+                psi_updated(i) =psi_n(i) + (initial_pop*dt) - (dt*conversion_rate1*(psi_n(i))*(psi_n(i))) + (2 *dt* gamma_var * zeta_n(i));// MOST RECENT -> DIFFUSION -> psi_n(i) + 2*gamma_var * zeta_nm1(i); // (alpha - beta*(psi_n(i))*(psi_n(i)) + gamma_var * zeta_m(i));//2 * gamma_var * zeta_m(i))
+                
+                
+            }
+            
+            
+            ArrayV<double> rhs = psi_updated;//previous right hand side, kind of like a placeholder
+            //ArrayV<double> rhs = psi_nm1;
+            poisson_solver.set_bc(bc_psi);
+            poisson_solver.set_Rhs(rhs);
+            // the diagonals here are what need to be changed if we want to add reaction terms
+            poisson_solver.set_Diagonal_Increment(1.0 + mu * dt);
+            
+            //        poisson_solver.set_Diagonal_Increment(1.0);
+            
+            poisson_solver.set_mu(dt*D_psi);
+            
+            poisson_solver.set_Phi(level_set_n);
+            poisson_solver.solve(psi_n); //we then solve for psi_n
             
         }
-        
-        
-        ArrayV<double> rhs = psi_updated;//previous right hand side, kind of like a placeholder
-        //ArrayV<double> rhs = psi_nm1;
-        poisson_solver.set_bc(bc_psi);
-        poisson_solver.set_Rhs(rhs);
-        // the diagonals here are what need to be changed if we want to add reaction terms
-        poisson_solver.set_Diagonal_Increment(1.0 + mu * dt);
-        
-        //        poisson_solver.set_Diagonal_Increment(1.0);
-        
-        poisson_solver.set_mu(dt*D_psi);
-        
-        poisson_solver.set_Phi(level_set_n);
-        poisson_solver.solve(psi_n); //we then solve for psi_n
-        
         // here is where we normalize the masses
         
         OcTreeCellBasedLevelSet ls;
@@ -493,39 +496,44 @@ int main()
         bc_zeta.setInterfaceType(NEUMANN);
         bc_zeta.setInterfaceValue(int_zeta_neumann_value);
         
-        
-        ArrayV<double> zeta_updated;
-        zeta_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
-        
-        //#pragma omp parallel for
-        
-        
-        
-        for (int i = 0; i < psi_updated.size(); i++) //because we got adding array operator, just inbetween step
+        // at time step 0 we do not want to solve anything, just intital conditions
+        if (n > 0)
         {
-            // rhs
-            // since zeta is a dimer, then two monomers give you one dimer so that's why there's the 0.5 in there
-            zeta_updated(i) = zeta_n(i) + 0.5 * (dt*conversion_rate1*(psi_n(i))*(psi_n(i))); // DIFUSION with gamma=0-> zeta_n(i) - 2*gamma_var * zeta_nm1(i); // (alpha - beta*(psi_n(i))*(psi_n(i)) + gamma_var * zeta_m(i));//2 * gamma_var * zeta_m(i))
             
+            ArrayV<double> zeta_updated;
+            zeta_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
+            
+            //#pragma omp parallel for
+            
+            
+            
+            for (int i = 0; i < zeta_updated.size(); i++) //because we got adding array operator, just inbetween step
+            {
+                // rhs
+                // since zeta is a dimer, then two monomers give you one dimer so that's why there's the 0.5 in there
+                zeta_updated(i) = zeta_n(i) + 0.5 * (dt*conversion_rate1*(psi_n(i))*(psi_n(i))); // DIFUSION with gamma=0-> zeta_n(i) - 2*gamma_var * zeta_nm1(i); // (alpha - beta*(psi_n(i))*(psi_n(i)) + gamma_var * zeta_m(i));//2 * gamma_var * zeta_m(i))
+                
+                
+            }
+            
+            
+            
+            //ArrayV<double> rhs_z = zeta_nm1;
+            
+            ArrayV<double> rhs_z =zeta_updated;
+            poisson_solver.set_bc(bc_zeta);
+            poisson_solver.set_Rhs(rhs_z);
+            // the diagonals here are what need to be changed if we want to add reaction terms
+            poisson_solver.set_Diagonal_Increment(1.0 + (mu * dt) + (dt * gamma_var));
+            
+            //        poisson_solver.set_Diagonal_Increment(1.);
+            
+            poisson_solver.set_mu(dt*D_zeta);
+            
+            poisson_solver.set_Phi(level_set_n);
+            poisson_solver.solve(zeta_n);
             
         }
-        
-        
-        
-        //ArrayV<double> rhs_z = zeta_nm1;
-        
-        ArrayV<double> rhs_z =zeta_updated;
-        poisson_solver.set_bc(bc_zeta);
-        poisson_solver.set_Rhs(rhs_z);
-        // the diagonals here are what need to be changed if we want to add reaction terms
-        poisson_solver.set_Diagonal_Increment(1.0 + (mu * dt) + (dt * gamma_var));
-        
-        //        poisson_solver.set_Diagonal_Increment(1.);
-        
-        poisson_solver.set_mu(dt*D_zeta);
-        
-        poisson_solver.set_Phi(level_set_n);
-        poisson_solver.solve(zeta_n);
         
         double total_zeta = ls.integral_Cell_Based(zeta_n);
         
@@ -562,23 +570,6 @@ int main()
         
         filestream << n << "     " << total_psi << endl;
         filestream2 << n << "     " << total_zeta << endl;
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
         
         
@@ -659,7 +650,7 @@ int main()
         
         
         // print everything
-        sprintf(file_name, "/Users/aliheydari/Documents/Prions Project Data/SoftDist_DStays/cell_splitting_%d.vtk", n);
+        sprintf(file_name, "/Users/aliheydari/Documents/Prions Project Data/DiffRxn_GaussMixtures/cell_splitting_%d.vtk", n);
         my_octree.print_VTK_Format(file_name);
         my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
         my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
@@ -687,9 +678,6 @@ int main()
     
     return 0;
 }
-
-
-
 
 
 
