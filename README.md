@@ -5,6 +5,8 @@ This project is in direct collaboration with **Prof. Suzanne Sindi** and **Prof.
 # More will be added on to this document as we develop the project
 this document will keep being updates as we keep adding more information about the project and the code
 
+# Plots and Vidoes available on [My Website](http://www.ali-heydari.com) <br >
+
 # Contact
 
 [My Email](aliheydari@ucdavis.edu) <br >
