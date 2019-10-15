@@ -10,9 +10,6 @@
 #include <iostream>
 #include <fstream>
 #include <list>
-#include <random>
-#include <string>
-
 
 #include <lib/arrays/ArrayV.h>
 #include <lib/amr/OcTree.h>
@@ -48,44 +45,39 @@ ArrayV <double> zeta_nm1;
 
 
 // Time discretization
-double T = 90; //final time
+double T = 10; //final time
 double dt = T/100.; //time step
 double t = 0.; //kind of the same as dt
 int n = 0; // just for iterations
 
 // Space discretization
-//double xL = 0.75; //space [0,L]
-//double yL = 0.75;
-//double zL = 0.75;
-
 double xL = 0.75; //space [0,L]
 double yL = 0.75;
 double zL = 0.75;
-
 int min_level = 1; //for our adaptive meshing
 int max_level = 6; //for our adaptive meshing
 
 // System parameters
-double D_psi = 0.001; // Diffusion coeffcient for "healthy" protein
-double D_zeta = 0.001; // Diffusion coeffcient for aggregate
+double D_psi = 0.0001; // Diffusion coeffcient for "healthy" protein
+double D_zeta = 0.0001; // Diffusion coeffcient for aggregate
 
 //rate
-double gamma_BtoA = 0.5 * 0;
+double gamma_AtoB = 0.001 * 0;
 double initial_pop = 10*0;
-double gamma_AtoB = 0.1 * 0;
-double mu = 0.9 * 0;
+double gamma_BtoA = 0.9 * 0;
+double mu = 0.2 * 0;
 //double D_z = 0.001;
 
 double init_mass_A;
 double init_mass_B;
 
-// for numerical stability during division
-double epsilon = 0.00000001;
+double epsilon = 0.000000001;
 
 // Level_set
 
 class LS : public CF_3
 {
+    
     public:
     LS() //this is the Level Set Function.
     {
@@ -97,7 +89,7 @@ class LS : public CF_3
         double beta = 1.7; //radius of mother and daughter depend on this
         
         
-        double r1_start = 0.25; //radius
+        double r1_start = 0.15; //radius
         
         // so that we have mass conservation:
         double r2_start = 0.05; // + (0.005 * t); //another radius
@@ -122,13 +114,13 @@ class LS : public CF_3
         
         // to make the daughter cell not exit the domain
         double phi2;
-        if (t < 5)
+        if (t < 3)
         {
             phi2= sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.35*t)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
         }
         else
         {
-            phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.35*5)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
+            phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.35*3)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
             
         }
         //        double phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y2_start))+SQR(z-z2_start))-(r2_start);
@@ -169,7 +161,7 @@ class Initial_Solution : public CF_3
     }
     double operator() (double x, double y, double z) const
     {
-        double r1_start = 0.25;
+        double r1_start = 0.15;
         
         double x1_start = xL/2.;
         double y1_start = 0.25;
@@ -177,20 +169,14 @@ class Initial_Solution : public CF_3
         double phi = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start);
         
         if (phi>0.)
-        {
-            return 0;
-        }
-        
+        return 0;
         else
+        //return ((ABS(1000 * sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))))); //this is where we make it a circle
+        
         // Gaussian Dist, exact same as Zeta
-        {
-            return ((ABS(10* exp(-1 * 100 * (SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))))));
-            
-        }
-        
-        
+        return ((ABS(10* exp(-1 * 100 * (SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))))));
     }
-} psi_initial_normal;
+} psi_initial;
 
 
 // ZETA INITIAL CONDITION
@@ -203,102 +189,30 @@ class zeta_Initial_Solution : public CF_3
     }
     double operator() (double x, double y, double z) const
     {
-        double r1_start = 2.5;
+        double r1_start = 0.15;
         
         double x1_start = xL/2.;
-        double y1_start = 2.5;
+        double y1_start = 0.25;
         double z1_start = zL/2.;
         double phi = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start);
         if (phi>0.)
-        {
-            return 0;
-        }
-        
+        return 0;
         else
         //return ((ABS(1000 * sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start)))); //this is where we make it a circle
-        {
-            
-            return ((ABS(10* exp(-1 * 100 * (SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))))));
-            //return ((ABS(1000 * sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start)))));
-            
-            
-        }
+        
+        return ((ABS(10 * exp(-1 * 100 * (SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start)))))); // Gaussian Distribution
         
         
     }
-} zeta_initial_normal;
-
-
-/* WE COULD JUST ADD NEW FUNCTIONS TO THE LAST CLASS TO MAKE IT DO MIXURES, but for now I want to just overload the operator
- to make it more intuitive and easier : )
- */
-
-
-class Initial_Solution_mixture : public CF_3
-{
-    public:
-    Initial_Solution_mixture() //initial condition, is a distribution with some concentration (number of species)
-    {
-        lip = 1.;
-    }
-    double operator() (double x, double y, double z) const
-    {
-        double r1_start = 0.25;
-        
-        double x1_start = xL/2.;
-        double y1_start = 0.25;
-        double z1_start = zL/2.;
-        double phi = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start);
-        
-        if (phi>0.)
-        {
-            return 0;
-        }
-        
-        else
-        // Gaussian Dist, exact same as Zeta
-        {
-            return ((ABS(10* exp(-1 * 100 * (SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))))) + (ABS(10* exp(-1 * 100 * (SQR(x-x1_start/4)+SQR(y-y1_start*2)+SQR(z-z1_start/3))))));
-            
-        }
-        
-        
-    }
-} psi_initial_mixture;
+} zeta_initial;
 
 
 
-class zeta_Initial_Solution_mixture : public CF_3
-{
-    public:
-    zeta_Initial_Solution_mixture() //initial condition, is a distribution with some concentration (number of species)
-    {
-        lip = 1.;
-    }
-    double operator() (double x, double y, double z) const
-    {
-        double r1_start = 0.25;
-        
-        double x1_start = xL/2.;
-        double y1_start = 0.25;
-        double z1_start = zL/2.;
-        double phi = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start);
-        
-        if (phi>0.)
-        {
-            return 0;
-        }
-        
-        else
-        // Gaussian Dist, exact same as Zeta
-        {
-            return ((ABS(10* exp(-1 * 100 * (SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))))) + (ABS(10* exp(-1 * 100 * (SQR(x-x1_start/4)+SQR(y-y1_start*2)+SQR(z-z1_start/3))))));
-            
-        }
-        
-        
-    }
-} zeta_initial_mixture;
+
+
+
+
+
 
 
 
@@ -407,16 +321,19 @@ Mass_Normalize rescale(double initial_totalMass,double current_total ,ArrayV<dou
     corrected.psi.resize_Without_Copy(my_octree.number_Of_Leaves());
     
     
-    double ratio = initial_totalMass/(current_total+epsilon); //2 * current_B + ratio;
+    double ratio = initial_totalMass/current_total; //2 * current_B + ratio;
+    
+    //corrected.total_mass = corrected.psi +  corrected.zeta  ;
     
     for (int i = 0; i < current_A.size(); i++) //because we got adding array operator, just inbetween step
     {
         corrected.psi(i) = ABS(current_A(i) * ratio);
-        corrected.zeta(i) = 2 * ABS(current_B(i) * ratio);
+        corrected.zeta(i) = ABS(current_B(i) * ratio);
     }
     
     return corrected;
 }
+
 
 
 // Structs for weight ditribution
@@ -466,30 +383,32 @@ IC_Generator generator(char choice ,ArrayV<double> current_A,ArrayV<double> curr
                 
                 // used to be psi_initial, but just to make srue they have the same initial condition!!
                 
-                vec.psi(i) = psi_initial_normal(x,y,z); //first element of psi_n is the initial condition
+                vec.psi(i) = psi_initial(x,y,z); //first element of psi_n is the initial condition
                 
-                vec.zeta(i) = zeta_initial_normal(x,y,z);
+                vec.zeta(i) = zeta_initial(x,y,z);
             }
             
             break;
             
-            // for mixture of Gaussians
-            case 'm':
-#pragma omp parallel for
-            for (CaslInt i = 0; i<my_octree.number_Of_Leaves(); i++) //where adaptive meshing is done
-            {
-                double x = my_octree.x_fr_i(my_octree.get_Leaf(i).icenter());
-                double y = my_octree.y_fr_j(my_octree.get_Leaf(i).jcenter());
-                double z = my_octree.z_fr_k(my_octree.get_Leaf(i).kcenter());
-                
-                // used to be psi_initial, but kist to ,ake srue they have the same initial condition!!
-                
-                vec.psi(i) = psi_initial_mixture(x,y,z); //first element of psi_n is the initial condition
-                
-                vec.zeta(i) = zeta_initial_mixture(x,y,z);
-            }
+            //for mixture of Gaussians
             
-            break;
+            
+            //            case 'm':
+            //#pragma omp parallel for
+            //            for (CaslInt i = 0; i<my_octree.number_Of_Leaves(); i++) //where adaptive meshing is done
+            //            {
+            //                double x = my_octree.x_fr_i(my_octree.get_Leaf(i).icenter());
+            //                double y = my_octree.y_fr_j(my_octree.get_Leaf(i).jcenter());
+            //                double z = my_octree.z_fr_k(my_octree.get_Leaf(i).kcenter());
+            
+            //                // used to be psi_initial, but kist to ,ake srue they have the same initial condition!!
+            
+            //                vec.psi(i) = psi_initial_mixture(x,y,z); //first element of psi_n is the initial condition
+            
+            //                vec.zeta(i) = zeta_initial_mixture(x,y,z);
+            //            }
+            
+            //            break;
             
             default:
             cout << "it didn't go through any of the cases, check and run again!" << endl;
@@ -524,25 +443,41 @@ class Daughter_LvlSet : public CF_3
         
         double beta = 1.7; //radius of mother and daughter depend on this
         
+        
+        double r1_start = 0.15; //radius
+        
         // so that we have mass conservation:
         double r2_start = 0.05; // + (0.005 * t); //another radius
+        
+        double alpha1 = r1_start/T*(beta-1); //placeholders
         double alpha2 = r2_start/T*(beta-1);
+        
+        double x1_start = xL/2.; //where we center sphere
         double y1_start = 0.25;
+        double z1_start = zL/2.;
+        
         double x2_start = xL/2.;
+        double y2_start = y1_start+r1_start;
         //        double y2_start = 0.75;
         
         double z2_start = zL/2.;
+        
+        double phi1 = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start); // (x-x1_start) *(y-y1_start) * (z-z1_start); //mother
+        //double phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y2_start*(1+0.35*t)))+SQR(z-z2_start))-(r2_start+alpha2*(t)); //daughter // sqrt(SQR(x-x2_start)+SQR(y-(y2_start*(1+0.35*t)))+SQR(z-z2_start))-(r2_start+alpha2*t);
+        
+        // Changed it to y1 start so that we start at the center of the mother cell
+        
+        // to make the daughter cell not exit the domain
         double phi2;
-        if (t < 5)
+        if (t < 3)
         {
             phi2= sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.35*t)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
         }
         else
         {
-            phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.35*5)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
+            phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.35*3)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
             
         }
-        //        double phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y2_start))+SQR(z-z2_start))-(r2_start);
         
         return phi2; //this is where the level set comes in, where we're actually doing the level set: we don't have negatives, so whichever gives us zero is our level set (because o(x) = 0, from picture)
         
@@ -558,6 +493,8 @@ class Daughter_LvlSet : public CF_3
 
 
 
+
+//everything we had before was just declaring classes, but we now need to initialize them
 
 //everything we had before was just declaring classes, but we now need to initialize them
 
@@ -581,7 +518,13 @@ int main()
     
     
     ArrayV <double>  level_set_n (my_octree.number_Of_Nodes());
-    // ArrayV <double>  level_set_daughter (my_octree.number_Of_Nodes());
+    
+    // THIS IS WHAT I ADDED TO DO INTEGRATION OVER THE DOMAIN
+    ArrayV<double> daughter_cell(my_octree.number_Of_Nodes());
+    
+    level_set_n.resize_Without_Copy(my_octree.number_Of_Nodes());
+    daughter_cell.resize_Without_Copy(my_octree.number_Of_Nodes());
+    
     psi_n.resize_Without_Copy(my_octree.number_Of_Leaves());
     psi_nm1.resize_Without_Copy(my_octree.number_Of_Leaves());
     
@@ -598,16 +541,13 @@ int main()
     
     IC_Generator init_cond;
     
-    init_cond = generator('m',psi_n,zeta_n, my_octree);
+    init_cond = generator('n',psi_n,zeta_n, my_octree);
     psi_n = init_cond.psi;
     zeta_n = init_cond.zeta;
     
-    // THIS IS WHAT I ADDED TO DO INTEGRATION OVER THE DOMAIN
     
     
-    ArrayV<double> daughter_cell(my_octree.number_Of_Nodes());
     
-    level_set_n.resize_Without_Copy(my_octree.number_Of_Nodes());
 #pragma omp parallel for
     for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
     {
@@ -619,23 +559,26 @@ int main()
     }
     
     
-    //        OcTreeLevelSet lev_set;
-    //        lev_set.set_Octree(my_octree);
-    //        lev_set.set_Phi(daughter_cell);
-    
+    //            OcTreeLevelSet lev_set;
+    //            lev_set.set_Octree(my_octree);
+    //            lev_set.set_Phi(daughter_cell);
+    //            lev_set.integrate_Over_Domain(psi_n);
     
     // print to the file for figures
     
     
-    //        ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DiffRxn_ForPlot.txt");
-    //        ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DiffRxn_ForPlot.txt");
     
-    ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DiffRxn_notThisOne.txt");
-    ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DiffRxn_notThisOne.txt");
-    ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_notThisOne.txt");
-    ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_notThisOne.txt");
+    //    ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DiffRxn_notThisOne.txt");
+    //    ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DiffRxn_notThisOne.txt");
+    //    ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_notThisOne.txt");
+    //    ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_notThisOne.txt");
     
-    
+    ofstream filestream;
+    ofstream filestream2;
+    ofstream daughterStreamA;
+    ofstream daughterStreamB;
+    ofstream motherStreamA;
+    ofstream motherStreamB;
     
     while (D_psi <= 0.1)
     {
@@ -643,44 +586,56 @@ int main()
         D_zeta = D_psi * 10;
         
         if (D_psi == 0.1)
-        {
-            ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D01.txt");
-            ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D01.txt");
-            ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D01.txt");
-            ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D01.txt");
+        {   t = 0;
+            filestream.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D01.txt");
+            filestream2.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D01.txt");
+            daughterStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D01.txt");
+            daughterStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D01.txt");
+            motherStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/A_MothOnly_D01.txt");
+            motherStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_MothOnly_D01.txt");
+            
             cout << "current diffusion rate: " << D_psi << endl;
             cout << "current Psi Reaction rate: " << gamma_AtoB << " and Zeta Reaction " << gamma_BtoA << endl;
             
         }
         
         else if ( D_psi == 0.01)
-        {
-            ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D001.txt");
-            ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D001.txt");
-            ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D001.txt");
-            ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D001.txt");
+        {   t = 0;
+            filestream.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D001.txt");
+            filestream2.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D001.txt");
+            daughterStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D001.txt");
+            daughterStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D001.txt");
+            motherStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/A_MothOnly_D001.txt");
+            motherStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_MothOnly_D001.txt");
+            
             cout << "current diffusion rate: " << D_psi << endl;
             cout << "current Psi Reaction rate: " << gamma_AtoB << " and Zeta Reaction " << gamma_BtoA << endl;
             
         }
         
         else if ( D_psi == 0.001)
-        {
-            ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D0001.txt");
-            ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D0001.txt");
-            ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D0001.txt");
-            ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D0001.txt");
+        {    t = 0;
+            filestream.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D0001.txt");
+            filestream2.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D0001.txt");
+            daughterStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D0001.txt");
+            daughterStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D0001.txt");
+            motherStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/A_MothOnly_D0001.txt");
+            motherStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_MothOnly_D0001.txt");
+            
             cout << "current diffusion rate: " << D_psi << endl;
             cout << "current Psi Reaction rate: " << gamma_AtoB << " and Zeta Reaction " << gamma_BtoA << endl;
             
         }
         
         else if ( D_psi == 0.0001)
-        {
-            ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D00001.txt");
-            ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D00001.txt");
-            ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D00001.txt");
-            ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D00001.txt");
+        {   t = 0;
+            filestream.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D00001.txt");
+            filestream2.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D00001.txt");
+            daughterStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D00001.txt");
+            daughterStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D00001.txt");
+            motherStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/A_MothOnly_D00001.txt");
+            motherStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_MothOnly_D00001.txt");
+            
             cout << "current diffusion rate: " << D_psi << endl;
             cout << "current Psi Reaction rate: " << gamma_AtoB << " and Zeta Reaction " << gamma_BtoA << endl;
             
@@ -689,10 +644,13 @@ int main()
         
         else
         {
-            ofstream filestream("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D00001.txt");
-            ofstream filestream2("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D00001.txt");
-            ofstream daughterStreamA("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D00001.txt");
-            ofstream daughterStreamB("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D00001.txt");
+            filestream.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_Diff_ForPlot_D00001.txt");
+            filestream2.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_Diff_ForPlot_D00001.txt");
+            daughterStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_psi_data_diffOnly/A_DauOnly_D00001.txt");
+            daughterStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_DauOnly_D00001.txt");
+            motherStreamA.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/A_MothOnly_D00001.txt");
+            motherStreamB.open("/Users/aliheydari/Documents/Prions Project Data/total_zeta_data_diffOnly/B_MothOnly_D00001.txt");
+            
             cout << "current diffusion rate: " << D_psi << endl;
             cout << "current Psi Reaction rate: " << gamma_AtoB << " and Zeta Reaction " << gamma_BtoA << endl;
             
@@ -751,28 +709,69 @@ int main()
                 poisson_solver.solve(psi_n); //we then solve for psi_n
                 
             }
-            // here is where we normalize the masses
+            
+            
             
             OcTreeCellBasedLevelSet ls;
             ls.set_Octree(my_octree);
             ls.set_Phi(level_set_n);
             
+            /* HERE
+             * HERE
+             * HERE
+             * HERE
+             */
+            
+            
+            OcTreeCellBasedLevelSet ls_daughter;
+            ls_daughter.set_Octree(my_octree);
+            ls_daughter.set_Phi(daughter_cell);
+            
+            
+            
+            
+            
+            
+            /* HERE
+             * HERE
+             * HERE
+             * HERE
+             */
+            
+            //            OcTreeLevelSet daughter_ls;
+            //            ls.set_Octree(my_octree);
+            //            ls.set_Phi(daughter_cell);
+            
+            //            if (n == 1 || n == 15 || n == 99)
+            //            {
+            //            double only_daughter_psi = daughter_ls.integrate_;
+            //            double only_daughter_zeta = daughter_ls.integrate_Over_Domain(zeta_n);
+            
+            ////           double only_daughter_psi = daughter_ls.volume_In_Negative_Domain();
+            ////           double only_daughter_zeta = daughter_ls.volume_In_Negative_Domain();
+            
+            
+            //            daughterStreamA << n << "     " << only_daughter_psi << endl;
+            //            daughterStreamA << n << "     " << only_daughter_zeta << endl;
+            
+            //            cout << "mass in daughter cell : "<< only_daughter_psi + only_daughter_zeta << endl;
+            
+            //            }
+            
             double total_psi = ls.integral_Cell_Based(psi_n);
+            double total_zeta = ls.integral_Cell_Based(zeta_n);
+            
+            double only_daughter_psi = ls_daughter.integral_Cell_Based(psi_n);
+            double only_daughter_zeta = ls_daughter.integral_Cell_Based(zeta_n);
             
             
             
-            OcTreeCellBasedLevelSet lev_set;
-            lev_set.set_Octree(my_octree);
-            lev_set.set_Phi(daughter_cell);
-            
-            //        double only_daughter_psi = lev_set.integral_Cell_Based(psi_n);
-            //        double only_daughter_zeta = lev_set.integral_Cell_Based(zeta_n);
-            
-            double only_daughter_psi;
-            double only_daughter_zeta ;
-            
-            
-            
+            if (n==0)
+            {
+                init_mass_A = total_psi;
+                init_mass_B = total_zeta;
+                
+            }
             
             
             //ZETA
@@ -802,10 +801,6 @@ int main()
                     
                 }
                 
-                
-                
-                //ArrayV<double> rhs_z = zeta_nm1;
-                
                 ArrayV<double> rhs_z =zeta_updated;
                 poisson_solver.set_bc(bc_zeta);
                 poisson_solver.set_Rhs(rhs_z);
@@ -821,23 +816,24 @@ int main()
                 
             }
             
-            double total_zeta = ls.integral_Cell_Based(zeta_n);
             
-            if (n==0)
-            {
-                init_mass_A = total_psi;
-                init_mass_B = total_zeta;
-                double  init_mass_A_daughter = only_daughter_psi;
-                double init_mass_B_daughter = only_daughter_zeta;
-                
-                
-            }
             
+            
+            daughterStreamA << n << "     " << only_daughter_psi << endl;
+            daughterStreamB << n << "     " << only_daughter_zeta << endl;
+            
+            motherStreamA << n << "     " << total_psi - only_daughter_psi << endl;
+            motherStreamB << n << "     " << total_zeta - only_daughter_zeta << endl;
+            
+            cout << "total mass in daughter cell : "<< only_daughter_psi + only_daughter_zeta << endl;
+            cout << "total mass in mother cell : "<< total_psi - only_daughter_psi + total_zeta - only_daughter_zeta  << endl;
             
             Mass_Normalize mass;
             //mass = rescale(init_mass_A + 2*init_mass_B,total_psi+ 2* total_zeta,psi_n,zeta_n,my_octree);
             
             mass = rescale(init_mass_A + init_mass_B,total_psi+ total_zeta,psi_n,zeta_n,my_octree);
+            
+            
             
             
             psi_n = mass.psi;
@@ -847,40 +843,22 @@ int main()
             ls.extrapolate_Along_Normal_Using_Cells(psi_n, bc_psi);
             ls.extrapolate_Along_Normal_Using_Cells(zeta_n, bc_zeta);
             
-            
-            
-            //        OcTreeLevelSet lvl;
-            //        lvl.set_Octree(my_octree);
-            //        lvl.set_Phi(level_set_n);
-            //        lvl.volume_In_Negative_Domain();
+            cout << "Current Total Psi -> "<< total_psi << endl;
+            cout << "Current Total zeta -> "<< total_zeta << endl;
             
             
             total_psi = ls.integral_Cell_Based(psi_n);
             total_zeta = ls.integral_Cell_Based(zeta_n);
             
-            cout << "Corrected Total Psi (cell based) -> "<< total_psi << endl;
-            cout << "Corrected Total zeta (cell based) -> "<< total_zeta << endl;
+            cout << "Corrected Total Psi  -> "<< total_psi << endl;
+            cout << "Corrected Total zeta -> "<< total_zeta << endl;
             
             filestream << n << "     " << total_psi << endl;
             filestream2 << n << "     " << total_zeta << endl;
-            daughterStreamA << n << "     " << only_daughter_psi << endl;
-            daughterStreamA << n << "     " << only_daughter_zeta << endl;
             
-            
-            // mass in the daughter cell
-            // OcTreeLevelSet object
-            //double only_daughter = lev_set.integrate_Over_Domain(0);
-            // im gonna try OctreeCellBased instead
-            
-            
-            cout << "mass in daughter cell : "<< only_daughter_psi + only_daughter_zeta << endl;
             cout << "Current Total mass: " << total_psi + total_zeta << endl;
             
-            
             t += dt;
-            
-            
-            
             
             new_octree.make_It_Have_Root_Cell_Only();
             new_octree.set_Grid(0.,xL,0.,yL,0.,zL);
@@ -892,11 +870,6 @@ int main()
             //        //        new_octree.impose_Uniform_Grid_On_Interface(level_set,max_level,3);
             new_octree.initialize_Neighbors();
             
-            
-            //        SplitCriteria criterion;
-            //        new_octree = my_octree;
-            //        new_octree.update_Octree(criterion);
-            //        new_octree.initialize_Neighbors();
             
             
             // update the quatity in the new mesh
@@ -942,6 +915,7 @@ int main()
             }
             
             level_set_n.resize_Without_Copy(my_octree.number_Of_Nodes());
+            daughter_cell.resize_Without_Copy(my_octree.number_Of_Nodes());
 #pragma omp parallel for
             for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
             {
@@ -949,6 +923,8 @@ int main()
                 double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
                 double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
                 level_set_n(i) = level_set(x,y,z);
+                daughter_cell(i) = level_set_daughter(x,y,z);
+                
             }
             
             
@@ -995,6 +971,13 @@ int main()
         }
         
         
+        filestream.close();
+        filestream2.close();
+        daughterStreamA.close();
+        daughterStreamB.close();
+        motherStreamA.close();
+        motherStreamB.close();
+        n = 0;
         
         
     }
@@ -1005,11 +988,6 @@ int main()
     
     return 0;
 }
-
-
-
-
-
 
 
 
