@@ -34,23 +34,24 @@ mains_prions/prion_cell_splitting.cpp
 TEMPLATE = app
 TARGET = Prions_Project
 
-
+# WITH OPENMP ON LINUX WORKS FANTASTIC
 ### OMP,PETSC STUFF: only for release...
 message($${CONFIG})
 !contains(CONFIG, "gcc debug"){
-message( "This is a message" )
-#QMAKE_CXXFLAGS += -fopenmp
-#QMAKE_LFLAGS += -fopenmp # -lvoro++
-DEFINES += CASL_THROWS\
-CASL_PETSC\
-#CASL_OPENMP\
-#LIBS += -fopenmp
+    message( "release config" )
+    QMAKE_CXXFLAGS += -fopenmp
+    QMAKE_LFLAGS += -fopenmp
+    DEFINES += CASL_PETSC\
+    CASL_OPENMP\
+    #LIBS += -fopenmp
 }
+
 DEFINES += CASL_THROWS\
 
 QMAKE_CXXFLAGS +=  -w -O3
 QMAKE_LFLAGS +=  -w -O3
 #LIBS += -fopenmp
+# only if doing hardcore 3D fluids simulation
 
 #LIBS += -lvoro++
 
