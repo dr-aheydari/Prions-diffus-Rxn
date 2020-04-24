@@ -76,8 +76,10 @@ double zL = 0.75;
 
 
 ////////////
-int min_level = 5; //for our adaptive meshing
-int max_level = 7; //for our adaptive meshing
+// run min 5, max 7 for camera ready
+
+int min_level = 2; //for our adaptive meshing
+int max_level = 6; //for our adaptive meshing
 ////////////
 
 // System parameters
@@ -103,6 +105,7 @@ double threshold = 9;
 char hole = 'T';
 char DiffRXN = 'F';
 char DiffOnly='F';
+char compart = 'T';
 
 char* FolderPath;
 string txtPathA;
@@ -134,6 +137,28 @@ public:
     {
         
         double beta = 1.7; //radius of mother and daughter depend on this
+        
+        
+        // ellipsoid constants //
+        double a1 = 1.1;
+        double a2 = 1.;
+        
+        double b1 = 1.2;
+        double b2 = 1.;
+        
+        double c1 = 0.9;
+        double c2 = 0.9;
+        
+        double x1_ell = xL/2.2; //where we center sphere
+        double y1_ell = yL/2.2;
+        double z1_ell = zL/2.2;
+        
+        double x2_ell = xL/2.2;
+        double y2_ell = yL/2.2;
+        double z2_ell = zL/2.2;
+        
+        
+        // // //
         
         
         double r1_start = 0.15; //radius
@@ -184,6 +209,8 @@ public:
             // phi3: Nucleus for the mother cell
             // phi4: Nucleus for the daughter cell
             double phi3;
+            double phi5;
+            double phi6;
             
             if (t < 1.0)
             {
@@ -209,7 +236,32 @@ public:
                 phi4= sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.15*t)))+SQR(z-z2_start))-((r2_start/4)+alpha2*(t/2.6));
             }
             //            return MAX(MIN(phi1,phi2),-1*phi3);
-            return MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4));
+            
+            // when we want to enable the compartments
+            if (compart == 'T')
+            {
+                phi5 = sqrt(SQR((x-x1_ell)/a1)+SQR((y-y1_ell)/b1)+SQR((z-z1_ell)/c1))-0.03;
+                
+                
+                // this one we want to use or something that stays inside
+                phi6 = sqrt(SQR((x-(x1_ell-0.01))/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-z1_ell)/c1))-0.03;
+                
+                
+                // this one we want it to be outside
+                //                phi6 = sqrt(SQR((x-(0.50))/a1)+SQR((y-(y1_ell))/b1)+SQR((z-z1_ell)/c1))-0.03;
+                
+                cout<< MIN(phi3,phi6) << "\n";
+                return MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4),-1*phi5,-1*phi6);
+                
+                
+            }
+            
+            // when we do not want additional compartments
+            else if (compart == 'F')
+            {
+                return MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4));
+            }
+            
         }
         
         else
@@ -219,7 +271,14 @@ public:
         }
         
         
+        
+        
+        
+        
     }
+    
+    
+    
 } level_set;
 class Daughter_LvlSet : public CF_3
 {
@@ -300,6 +359,8 @@ public:
         //this is where the level set comes in, where we're actually doing the level set: we don't have negatives, so whichever gives us zero is our level set (because o(x) = 0, from picture)
     }
 } level_set_daughter;
+
+
 class SplitCriteria : public SplitCriteriaOcTree //split criteria for the adaptive meshing
 {
 public:
@@ -466,6 +527,8 @@ int main(int argc, char **argv)
     ls_nodes.set_Phi(daughter_cell);
     ls_nodes.reinitialize();
     ls_nodes.perturb_Level_Function(1E-2*my_octree.dx_finest_resolution());
+    
+    
     
     /***************************************************/
     // print masses to files... here we initialize each file
