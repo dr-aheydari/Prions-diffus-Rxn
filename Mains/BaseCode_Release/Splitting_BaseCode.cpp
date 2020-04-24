@@ -81,13 +81,13 @@ int max_level = 7; //for our adaptive meshing
 ////////////
 
 // System parameters
-double D_psi = 0.001; // Diffusion coeffcient for "healthy" protein
-double D_zeta = 0.001; // Diffusion coeffcient for aggregate
+double D_psi = 10; // Diffusion coeffcient for "healthy" protein
+double D_zeta = 0.01; // Diffusion coeffcient for aggregate
 
 //rate
-double gamma_AtoB = 0.01 ;
+double gamma_AtoB = 0.1 ;
 double initial_pop = 10*0;
-double gamma_BtoA = 0.1;
+double gamma_BtoA = 0.01;
 double mu = 0.2 * 0;
 //double D_z = 0.001;
 
@@ -99,12 +99,9 @@ double epsilon = 0.000000001;
 // this threshold is used for knowing when the daughter cell will leave the mother cell
 double threshold = 9;
 
-
-double pos = 0;
-
 // intialize for explicit task dependent file IO
-char hole = 'F';
-char DiffRXN = 'T';
+char hole = 'T';
+char DiffRXN = 'F';
 char DiffOnly='F';
 
 char* FolderPath;
@@ -237,7 +234,7 @@ public:
         double beta = 1.7; //radius of mother and daughter depend on this
         
         
-        double r1_start = 0.20; //radius
+        double r1_start = 0.15; //radius
         
         // so that we have mass conservation:
         double r2_start = 0.0; // + (0.005 * t); //another radius
