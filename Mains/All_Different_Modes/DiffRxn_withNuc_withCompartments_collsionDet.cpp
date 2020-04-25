@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <list>
+#include <tuple>
 
 #include <lib/arrays/ArrayV.h>
 #include <lib/amr/OcTree.h>
@@ -24,6 +25,7 @@
 #include <lib/AliTools/Make_Folders.h>
 #include <lib/AliTools/IC_Generator.h>
 #include <lib/AliTools/Psi_Zeta_Init_Class.cpp>
+#include <lib/AliTools/signum.cpp>
 
 #ifdef CASL_PETSC
 #include <lib/tools/PetscTools.h>
@@ -124,66 +126,70 @@ string Return_FolderPAth;
 char initCond = 'r';
 
 
+
 // Level_set
 class LS : public CF_3
 {
-    
 public:
     LS() //this is the Level Set Function.
     {
         lip = 1.; //Lipschitz constant, for adaptive meshing purposes
     }
-    double operator() (double x, double y, double z) const
+    
+    double beta = 1.7; //radius of mother and daughter depend on this
+    
+    
+    // ellipsoid constants //
+    double a1 = 1.1;
+    double a2 = 1.;
+    
+    double b1 = 1.2;
+    double b2 = 1.;
+    
+    double c1 = 0.9;
+    double c2 = 0.9;
+    
+    double x1_ell = xL/2.2; //where we center sphere
+    double y1_ell = yL/2.2;
+    double z1_ell = zL/2.2;
+    
+    double x2_ell = xL/2.2;
+    double y2_ell = yL/2.2;
+    double z2_ell = zL/2.2;
+    
+    // // //
+    
+    
+    double r1_start = 0.15; //radius
+    
+    // so that we have mass conservation:
+    double r2_start = 0.02; // + (0.005 * t); //another radius
+    
+    double alpha2 = (r1_start * (0.873580464) - r2_start)/9.0;
+    
+    double x1_start = xL/2.; //where we center sphere
+    double y1_start = 0.25;
+    double z1_start = zL/2.;
+    
+    double x2_start = xL/2.;
+    
+    double z2_start = zL/2.;
+    
+    
+    tuple<double, double, double, double, double, double > Assign_phi(double x, double y, double z) const
     {
         
-        double beta = 1.7; //radius of mother and daughter depend on this
+        double phi1, phi2, phi3, phi4, phi5, phi6;
         
-        
-        // ellipsoid constants //
-        double a1 = 1.1;
-        double a2 = 1.;
-        
-        double b1 = 1.2;
-        double b2 = 1.;
-        
-        double c1 = 0.9;
-        double c2 = 0.9;
-        
-        double x1_ell = xL/2.2; //where we center sphere
-        double y1_ell = yL/2.2;
-        double z1_ell = zL/2.2;
-        
-        double x2_ell = xL/2.2;
-        double y2_ell = yL/2.2;
-        double z2_ell = zL/2.2;
-        
-        
-        // // //
-        
-        
-        double r1_start = 0.15; //radius
-        
-        // so that we have mass conservation:
-        double r2_start = 0.02; // + (0.005 * t); //another radius
-        
-        double alpha2 = (r1_start * (0.873580464) - r2_start)/9.0;
-        
-        double x1_start = xL/2.; //where we center sphere
-        double y1_start = 0.25;
-        double z1_start = zL/2.;
-        
-        double x2_start = xL/2.;
-        
-        double z2_start = zL/2.;
-        
-        double phi1 = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start); // (x-x1_start) *(y-y1_start) * (z-z1_start); //mother
+        // (x-x1_start) *(y-y1_start) * (z-z1_start); //mother
         //double phi2 = sqrt(SQR(x-x2_start)+SQR(y-(y2_start*(1+0.35*t)))+SQR(z-z2_start))-(r2_start+alpha2*(t)); //daughter // sqrt(SQR(x-x2_start)+SQR(y-(y2_start*(1+0.35*t)))+SQR(z-z2_start))-(r2_start+alpha2*t);
         
         // Changed it to y1 start so that we start at the center of the mother cell
         // to make the daughter cell not exit the domain
-        double phi2;
         
-        double phi4;
+        
+        phi1 = sqrt(SQR(x-x1_start)+SQR(y-y1_start)+SQR(z-z1_start))-(r1_start);
+        
         if (t < threshold)
         {
             phi2= sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.15*t)))+SQR(z-z2_start))-(r2_start+alpha2*(t));
@@ -197,7 +203,7 @@ public:
         
         if (hole=='F')
         {
-            return MIN(phi1,phi2);
+            return {phi1, phi2, phi3, phi4, phi5, phi6};
         }
         
         else if (hole=='T')
@@ -208,9 +214,7 @@ public:
             
             // phi3: Nucleus for the mother cell
             // phi4: Nucleus for the daughter cell
-            double phi3;
-            double phi5;
-            double phi6;
+            
             
             if (t < 1.0)
             {
@@ -246,17 +250,52 @@ public:
                 // this one we want to use or something that stays inside
                 phi6 = sqrt(SQR((x-(x1_ell-0.01))/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-z1_ell)/c1))-0.03;
                 
-                
                 // this one we want it to be outside
                 //                phi6 = sqrt(SQR((x-(0.50))/a1)+SQR((y-(y1_ell))/b1)+SQR((z-z1_ell)/c1))-0.03;
                 
-                cout<< MIN(phi3,phi6) << "\n";
-                return MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4),-1*phi5,-1*phi6);
-                
+                //              cout<< MIN(phi3,phi6) << "\n";
+                return {phi1, phi2, phi3, phi4, phi5, phi6};;
                 
             }
             
-            // when we do not want additional compartments
+            // when we do not want additional compartments;=
+            else if (compart == 'F')
+            {
+                return {phi1, phi2, phi3, phi4, phi5, phi6};;
+            }
+            
+        }
+        
+        else
+        {
+            cout<<"Undefined Case of object in the middle...abort" << endl;
+            return {phi1, phi2, phi3, phi4, phi5, phi6};
+        }
+        
+    }
+    
+    
+    double operator() (double x, double y, double z) const
+    {
+        
+        auto [phi1, phi2, phi3, phi4, phi5, phi6] =  Assign_phi(x, y,z);
+        
+        
+        if (hole=='F')
+        {
+            return MIN(phi1,phi2);
+        }
+        
+        else if (hole=='T')
+        {
+            
+            if (compart == 'T')
+            {
+                
+                return MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4),-1*phi5,-1*phi6);
+                
+            }
+            
             else if (compart == 'F')
             {
                 return MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4));
@@ -270,16 +309,63 @@ public:
             return -1;
         }
         
-        
-        
-        
-        
-        
     }
     
     
+    int Find_Intersect(double x, double y, double z, int counter ,char whichOne)
+    {
+        auto [phi1, phi2, phi3, phi4, phi5, phi6] = Assign_phi(x,y,z);
+        
+        if (whichOne == '5')
+        {
+            // define all the geometry minus the desired level-set function
+            
+            
+            double phi_total = MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4),-1*phi6);
+            //
+            if (sgn(phi5) == 1 && sgn(phi_total) == -1)
+            {
+                // means that they are colliding at some point
+                counter++;
+                
+            }
+            else
+            {
+                // do nothing for now
+            }
+            
+            return counter;
+        }
+        
+        // define all the geometry minus the desired level-set function
+        else if (whichOne == '6')
+        {
+            double phi_total = MAX(MIN(phi1,phi2),-1*MIN(phi3,phi4),-1*phi5);
+            
+            if (sgn(phi6) == -1 && sgn(phi_total) == 1)
+            {
+                // this compartment is colliding at some points
+                counter++;
+            }
+            else
+            {
+                // do nothing for now
+            }
+            
+            return counter;
+        }
+        
+        else
+        {
+            // the right option was not provided
+            return -1;
+        }
+    }
     
 } level_set;
+
+
+
 class Daughter_LvlSet : public CF_3
 {
 public:
@@ -472,6 +558,16 @@ int main(int argc, char **argv)
     
     FullPath = Return_FolderPAth;
     
+    
+    char whichOne1= '5';
+    char whichOne2= '6';
+    
+    int coll_counter1 , coll_counter2;
+    
+    
+    
+    
+    
     /* INITIALIZE OCTREE AND INITIAL CONDITIONS */
     
     my_octree.set_Grid(0.,xL,0.,yL,0.,zL); //setting the grid
@@ -509,8 +605,6 @@ int main(int argc, char **argv)
     
     /************************************************************/
     
-    
-    
 #pragma omp parallel for
     for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
     {
@@ -518,6 +612,11 @@ int main(int argc, char **argv)
         double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
         double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
         level_set_n(i) = level_set(x,y,z);
+        
+        // find the the two compartments are touching or nah
+        coll_counter1 = level_set.Find_Intersect(x,y,z,coll_counter1,whichOne1);
+        coll_counter2 = level_set.Find_Intersect(x,y,z,coll_counter2,whichOne2);
+        
         daughter_cell(i) = level_set_daughter(x,y,z);
     }
     // to reinitialize the level-set and to take care of borderline cases
@@ -555,6 +654,19 @@ int main(int argc, char **argv)
         bc_psi.setWallValues(wall_psi_neumann_value);
         bc_psi.setInterfaceType(NEUMANN);
         bc_psi.setInterfaceValue(int_psi_neumann_value);
+        
+        
+        cout << "++++++++++++++++++++++++++++++++++++++++" << endl;
+        cout << coll_counter1 << " many collsions of Phi " << whichOne1 <<" compartments detected" << endl;
+        cout << "++++++++++++++++++++++++++++++++++++++++" << endl;
+        cout << coll_counter2 << " many collsions of Phi " << whichOne2 <<" compartments detected" << endl;
+        cout << "++++++++++++++++++++++++++++++++++++++++" << endl;
+        cout<<"Resetting counters to 0 " << endl;
+        // reset counters
+        coll_counter1 = 0;
+        coll_counter2 = 0;
+        
+        
         
         
         // at time step 0 we do not want to solve anything, just intital conditions
@@ -859,6 +971,10 @@ int main(int argc, char **argv)
             double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
             double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
             level_set_n(i) = level_set(x,y,z);
+            
+            // check if the compartments are touching as we update the level-set
+            coll_counter1 = level_set.Find_Intersect(x,y,z,coll_counter1,whichOne1);
+            coll_counter2 = level_set.Find_Intersect(x,y,z,coll_counter1,whichOne2);
             daughter_cell(i) = level_set_daughter(x,y,z);
             
         }
@@ -906,8 +1022,6 @@ int main(int argc, char **argv)
         n++;
         
     }
-    
-    
     
     return 0;
 }
