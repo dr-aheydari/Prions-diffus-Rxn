@@ -70,7 +70,7 @@ ArrayV <double> zeta_nm1;
 //double dt = T/500.; //time step
 
 double T = 9.5; //final time
-double dt = T/50.; //time step
+double dt = T/100.; //time step
 
 
 double tOrder = dt;
@@ -86,18 +86,18 @@ double zL = 0.75;
 ////////////
 // run min 5, max 7 for camera ready
 
-int min_level = 1; //for our adaptive meshing
-int max_level = 6; //for our adaptive meshing
+int min_level = 3; //for our adaptive meshing
+int max_level = 7; //for our adaptive meshing
 ////////////
 
 // System parameters
-double D_psi = 10; // Diffusion coeffcient for "healthy" protein
-double D_zeta = 0.01; // Diffusion coeffcient for aggregate
+double D_psi = 0.001; // Diffusion coeffcient for "healthy" protein
+double D_zeta = 0.001; // Diffusion coeffcient for aggregate
 
 //rate
-double gamma_AtoB = 0.01 ;
+double gamma_AtoB = 0.001*0 ;
 double initial_pop = 10*0;
-double gamma_BtoA = 0.01;
+double gamma_BtoA = 0.01*0;
 double mu = 0.2 * 0;
 //double D_z = 0.001;
 
@@ -143,7 +143,7 @@ double delta_phi = .01;
  if distance between a compartment and the geometry is less than this,
  then we consider it to be like a "collision" and we count it
  */
-double epsilon_phi = 0.01;
+double epsilon_phi = 0.002;
 double k = 1;
 
 double shounter = 0;
@@ -212,7 +212,6 @@ public:
     
     double operator() (double x, double y, double z) const
     {
-        
         
         auto [phi1, phi2, phi3,phi4 ,phi5, phi6] =  Assign_phi(x, y,z,velo);
         
@@ -310,214 +309,213 @@ public:
                 phi4= sqrt(SQR(x-x2_start)+SQR(y-(y1_start*(1+0.15*t)))+SQR(z-z2_start))-((r2_start/4)+alpha2*(t/2.6));
             }
             
-            // count the number of collision for the two compartments
-            int counter;
-            int bounter;
-            // random angles of rotation for the first compartment
-            double theta1 = velo(7);
-            double omega1 = velo(8);
-            double rho1 = velo(9);
-            auto [xx_1,xy_1,xz_1,yx_2,yy_2,yz_2,zx_3,zy_3,zz_3] = Rotation_Const(theta1,omega1,rho1);
-            
-            // random angles of rotation for the second compartment
-            double theta2 = velo(10);
-            double omega2 = velo(11);
-            double rho2 = velo(12);
-            
-            // these values will store the last spot where we had no issues
-            double last_x1;
-            double last_y1;
-            double last_z1;
-            double last_x2;
-            double last_y2;
-            double last_z2;
-            
-            //             phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-(y1_ell+0.19))/b1) + SQR((z-(z1_ell+0.03))/c1))-0.015;
-            
-            //             phi6 = sqrt(SQR((x-(x1_ell))/a1) + SQR((y-(y2_ell))/b1) + SQR((z-(z2_ell))/c1))-0.02;
-            
-            if (t < .32)
+            // if we have compartments we want to take into account
+            if (compart == 'T')
             {
-                counter = 0;
-                
-                //                   + SQR(((x-x1_ell)*cos(theta) + (y-(y1_ell-0.17)*sin(theta)) + (z-z1_ell))/b1)
-                //                     + SQR(((x-x1_ell)*cos(theta) + (y-(y1_ell-0.17)*sin(theta)) + (z-z1_ell))/c1))-0.02;
-                
-                
-                phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-(y1_ell))/b1) + SQR((z-(z1_ell))/c1))-0.015;
-                
-                phi6 = sqrt(SQR((x-(x2_ell))/a1) + SQR((y-(y2_ell))/b1) + SQR((z-(z2_ell))/c1))-0.02;
-                
-                last_x1 = x1_ell;
-                last_y1 = y1_ell;
-                last_z1 = z1_ell;
-                
-                last_x2 = x1_ell;
-                last_y2 = y1_ell;
-                last_z2 = z1_ell;
-                
-                
-            }
-            
-            else
-            {
-                // velocity directions for first compartment
-                double x_dir;
-                double y_dir;
-                double z_dir;
-                
-                // velocity compartment for the other compartment
-                double x_dir2;
-                double y_dir2;
-                double z_dir2;
-                
-                int counter = 15;
-                double delta_t = 0.03 ;
-                
-                //                 phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-y1_ell)/b1) + SQR((z-z1_ell)/c1))-0.015;
-                
-                while (counter > 0 && delta_t > 0.001)
-                {
-                    
-                    x_dir = (1*(velocity(1)*delta_t));
-                    y_dir = (1*(velocity(2)*delta_t));
-                    z_dir = (1*(velocity(3)*delta_t));
-                    
-                    
-                    //                     phi5 = sqrt(SQR((x-(x1_ell+(x_dir)))/a1)+SQR((y-(y1_ell+(y_dir)))/b1)+
-                    //                                                             SQR((z-(z1_ell+(z_dir)))/c1))-0.015;
-                    
-                    
-                    phi5 = sqrt(SQR(((x-(x1_ell+(x_dir)))*xx_1 + (y-(y1_ell+(y_dir)))*xy_1 + (z-(z1_ell+(z_dir)))*xz_1)/a1)
-                                
-                                +SQR(((x-(x1_ell+(x_dir)))*yx_2 + (y-(y1_ell+(y_dir)))*yy_2 + (z-(z1_ell+(z_dir)))*yz_2)/b1)
-                                
-                                +SQR(((x-(x1_ell+(x_dir)))*zx_3 + (y-(y1_ell+(y_dir)))*zy_3 + (z-(z1_ell+(z_dir)))*zz_3)/c1))-0.015;
-                    
-                    // approximation of distance between the two: add dist + dist2
-                    
-                    counter = Find_collision(x, y, z ,'5',phi5,phi6);
-                    global_dist_5 = Find_distance(x, y, z ,'5',phi5);
-                    
-                    delta_t = delta_t/2;
-                    global_collision = counter;
-                    shounter = delta_t;
-                    
-                }
-                
-                //                 cout << phi5 << endl;
-                
-                
-                
-                if (counter == 0)
-                {
-                    
-                    //                     phi5 = sqrt(SQR((x-(x1_ell+(x_dir)))/a1)+SQR((y-(y1_ell+(y_dir)))/b1)+
-                    //                                                             SQR((z-(z1_ell+(z_dir)))/c1))-0.015;
-                    
-                    phi5 = sqrt(SQR(((x-(x1_ell+(x_dir)))*xx_1 + (y-(y1_ell+(y_dir)))*xy_1 + (z-(z1_ell+(z_dir)))*xz_1)/a1)
-                                
-                                +SQR(((x-(x1_ell+(x_dir)))*yx_2 + (y-(y1_ell+(y_dir)))*yy_2 + (z-(z1_ell+(z_dir)))*yz_2)/b1)
-                                
-                                +SQR(((x-(x1_ell+(x_dir)))*zx_3 + (y-(y1_ell+(y_dir)))*zy_3 + (z-(z1_ell+(z_dir)))*zz_3)/c1))-0.015;
-                    
-                    last_x1 = x1_ell+(1*(velocity(1)*delta_t));
-                    last_y1 = y1_ell+(1*(velocity(2)*delta_t));
-                    last_z1 = z1_ell+(1*(velocity(3)*delta_t));
-                    
-                    
-                    
-                }
-                else
-                {
-                    
-                    phi5 = sqrt(SQR((x-last_x1)/a1) + SQR((y-(last_y1))/b1) + SQR((z-last_z1)/c1))-0.015;
-                    //                      phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-(y1_ell))/b1) + SQR((z-(z1_ell))/c1))-0.015;
-                    
-                }
-                
-                
-                // now for phi_6
-                global_collision = counter;
-                delta_t = 0.04;
-                bounter = 15;
+                // count the number of collision for the two compartments
+                int counter;
+                int bounter;
+                // random angles of rotation for the first compartment
+                double theta1 = velo(7);
+                double omega1 = velo(8);
+                double rho1 = velo(9);
+                auto [xx_1,xy_1,xz_1,yx_2,yy_2,yz_2,zx_3,zy_3,zz_3] = Rotation_Const(theta1,omega1,rho1);
                 
                 // random angles of rotation for the second compartment
                 double theta2 = velo(10);
                 double omega2 = velo(11);
                 double rho2 = velo(12);
                 
+                // these values will store the last spot where we had no issues
+                double last_x1;
+                double last_y1;
+                double last_z1;
+                double last_x2;
+                double last_y2;
+                double last_z2;
                 
-                auto [xx_11,xy_11,xz_11,yx_22,yy_22,yz_22,zx_33,zy_33,zz_33] = Rotation_Const(theta2,omega2,rho2);
-                
-                
-                
-                while (bounter > 0 && delta_t > 0.001)
+                if (t < .32)
                 {
+                    counter = 0;
                     
-                    // for now we use the same velocity vector as before
-                    x_dir2 = (1*(velocity(4)*delta_t));
-                    y_dir2 = (1*(velocity(5)*delta_t));
-                    z_dir2 = (1*(velocity(6)*delta_t));
+                    phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-(y1_ell))/b1) + SQR((z-(z1_ell))/c1))-0.015;
                     
+                    phi6 = sqrt(SQR((x-(x2_ell))/a1) + SQR((y-(y2_ell))/b1) + SQR((z-(z2_ell))/c1))-0.02;
                     
-                    //                     phi6 = sqrt(SQR((x-(x1_ell+0.07))/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-(z1_ell+0.07))/c1))-0.025;
+                    last_x1 = x1_ell;
+                    last_y1 = y1_ell;
+                    last_z1 = z1_ell;
                     
-                    //                     phi6 = sqrt(SQR((x-(x2_ell+(x_dir2)))/a1)+SQR((y-(y2_ell+(y_dir2)))/b1)+
-                    //                                 SQR((z-(z2_ell+(1*(z_dir2))))/c1))-0.02;
-                    
-                    
-                    phi6 = sqrt(SQR(((x-(x2_ell+(x_dir2)))*xx_11 + (y-(y2_ell+(y_dir2)))*xy_11 + (z-(z2_ell+(z_dir2)))*xz_11)/a1)
-                                
-                                +SQR(((x-(x2_ell+(x_dir2)))*yx_22 + (y-(y2_ell+(y_dir2)))*yy_22 + (z-(z2_ell+(z_dir2)))*yz_22)/b1)
-                                
-                                +SQR(((x-(x2_ell+(x_dir2)))*zx_33 + (y-(y2_ell+(y_dir2)))*zy_33 + (z-(z2_ell+(z_dir2)))*zz_33)/c1))-0.02;
-                    
-                    
-                    
-                    
-                    // approximation of distance between the two: add dist + dist2
-                    
-                    //                     counter = Find_collision(x, y, z, counter ,'5',phi5);
-                    global_dist_6 = Find_distance(x, y, z ,'6',phi6);
-                    bounter = Find_collision(x,y,z,'6',phi5,phi6);
-                    
-                    delta_t = delta_t/2;
-                    shounter2 = delta_t;
-                    
-                }
-                
-                if (bounter == 0)
-                {
-                    
-                    //                     phi6 = sqrt(SQR((x-(last_x2))/a1)+SQR((y-(last_y2))/b1)+SQR((z-(last_z2))/c1))-0.025;
-                    
-                    //                     phi6 = sqrt(SQR((x-(x2_ell+(x_dir2)))/a1)+SQR((y-(y2_ell+(y_dir2)))/b1)+
-                    //                                 SQR((z-(z2_ell+(1*(z_dir2))))/c1))-0.02;
-                    
-                    phi6 = sqrt(SQR(((x-(x2_ell+(x_dir2)))*xx_11 + (y-(y2_ell+(y_dir2)))*xy_11 + (z-(z2_ell+(z_dir2)))*xz_11)/a1)
-                                
-                                +SQR(((x-(x2_ell+(x_dir2)))*yx_22 + (y-(y2_ell+(y_dir2)))*yy_22 + (z-(z2_ell+(z_dir2)))*yz_22)/b1)
-                                
-                                +SQR(((x-(x2_ell+(x_dir2)))*zx_33 + (y-(y2_ell+(y_dir2)))*zy_33 + (z-(z2_ell+(z_dir2)))*zz_33)/c1))-0.02;
-                    
-                    
-                    
-                    last_x2 = x2_ell+(1*(velocity(1)*delta_t));
-                    last_y2 = y2_ell+(1*(velocity(2)*delta_t));
-                    last_z2 = z2_ell+(1*(velocity(3)*delta_t));
+                    last_x2 = x1_ell;
+                    last_y2 = y1_ell;
+                    last_z2 = z1_ell;
                     
                     
                 }
                 
                 else
                 {
-                    phi6 = sqrt(SQR((x-(last_x2))/a1) + SQR((y-(last_y2))/b1) + SQR((z-(last_z2))/c1))-0.02;
-                    //                     cout << last_x2;
+                    // velocity directions for first compartment
+                    double x_dir;
+                    double y_dir;
+                    double z_dir;
+                    
+                    // velocity compartment for the other compartment
+                    double x_dir2;
+                    double y_dir2;
+                    double z_dir2;
+                    
+                    int counter = 15;
+                    double delta_t = 0.03 ;
+                    
+                    //                 phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-y1_ell)/b1) + SQR((z-z1_ell)/c1))-0.015;
+                    
+                    while (counter > 0 && delta_t > 0.001)
+                    {
+                        
+                        x_dir = (1*(velocity(1)*delta_t));
+                        y_dir = (1*(velocity(2)*delta_t));
+                        z_dir = (1*(velocity(3)*delta_t));
+                        
+                        
+                        //                     phi5 = sqrt(SQR((x-(x1_ell+(x_dir)))/a1)+SQR((y-(y1_ell+(y_dir)))/b1)+
+                        //                                                             SQR((z-(z1_ell+(z_dir)))/c1))-0.015;
+                        
+                        
+                        phi5 = sqrt(SQR(((x-(x1_ell+(x_dir)))*xx_1 + (y-(y1_ell+(y_dir)))*xy_1 + (z-(z1_ell+(z_dir)))*xz_1)/a1)
+                                    
+                                    +SQR(((x-(x1_ell+(x_dir)))*yx_2 + (y-(y1_ell+(y_dir)))*yy_2 + (z-(z1_ell+(z_dir)))*yz_2)/b1)
+                                    
+                                    +SQR(((x-(x1_ell+(x_dir)))*zx_3 + (y-(y1_ell+(y_dir)))*zy_3 + (z-(z1_ell+(z_dir)))*zz_3)/c1))-0.015;
+                        
+                        // approximation of distance between the two: add dist + dist2
+                        
+                        counter = Find_collision(x, y, z ,'5',phi5,phi6);
+                        global_dist_5 = Find_distance(x, y, z ,'5',phi5);
+                        
+                        delta_t = delta_t/2;
+                        global_collision = counter;
+                        shounter = delta_t;
+                        
+                    }
+                    
+                    //                 cout << phi5 << endl;
+                    
+                    
+                    
+                    if (counter == 0)
+                    {
+                        
+                        //                     phi5 = sqrt(SQR((x-(x1_ell+(x_dir)))/a1)+SQR((y-(y1_ell+(y_dir)))/b1)+
+                        //                                                             SQR((z-(z1_ell+(z_dir)))/c1))-0.015;
+                        
+                        phi5 = sqrt(SQR(((x-(x1_ell+(x_dir)))*xx_1 + (y-(y1_ell+(y_dir)))*xy_1 + (z-(z1_ell+(z_dir)))*xz_1)/a1)
+                                    
+                                    +SQR(((x-(x1_ell+(x_dir)))*yx_2 + (y-(y1_ell+(y_dir)))*yy_2 + (z-(z1_ell+(z_dir)))*yz_2)/b1)
+                                    
+                                    +SQR(((x-(x1_ell+(x_dir)))*zx_3 + (y-(y1_ell+(y_dir)))*zy_3 + (z-(z1_ell+(z_dir)))*zz_3)/c1))-0.015;
+                        
+                        last_x1 = x1_ell+(1*(velocity(1)*delta_t));
+                        last_y1 = y1_ell+(1*(velocity(2)*delta_t));
+                        last_z1 = z1_ell+(1*(velocity(3)*delta_t));
+                        
+                        
+                        
+                    }
+                    else
+                    {
+                        
+                        phi5 = sqrt(SQR((x-last_x1)/a1) + SQR((y-(last_y1))/b1) + SQR((z-last_z1)/c1))-0.015;
+                        //                      phi5 = sqrt(SQR((x-x1_ell)/a1) +SQR((y-(y1_ell))/b1) + SQR((z-(z1_ell))/c1))-0.015;
+                        
+                    }
+                    
+                    
+                    // now for phi_6
+                    global_collision = counter;
+                    delta_t = 0.04;
+                    bounter = 15;
+                    
+                    // random angles of rotation for the second compartment
+                    double theta2 = velo(10);
+                    double omega2 = velo(11);
+                    double rho2 = velo(12);
+                    
+                    
+                    auto [xx_11,xy_11,xz_11,yx_22,yy_22,yz_22,zx_33,zy_33,zz_33] = Rotation_Const(theta2,omega2,rho2);
+                    
+                    
+                    
+                    while (bounter > 0 && delta_t > 0.001)
+                    {
+                        
+                        // for now we use the same velocity vector as before
+                        x_dir2 = (1*(velocity(4)*delta_t));
+                        y_dir2 = (1*(velocity(5)*delta_t));
+                        z_dir2 = (1*(velocity(6)*delta_t));
+                        
+                        
+                        //                     phi6 = sqrt(SQR((x-(x1_ell+0.07))/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-(z1_ell+0.07))/c1))-0.025;
+                        
+                        //                     phi6 = sqrt(SQR((x-(x2_ell+(x_dir2)))/a1)+SQR((y-(y2_ell+(y_dir2)))/b1)+
+                        //                                 SQR((z-(z2_ell+(1*(z_dir2))))/c1))-0.02;
+                        
+                        
+                        phi6 = sqrt(SQR(((x-(x2_ell+(x_dir2)))*xx_11 + (y-(y2_ell+(y_dir2)))*xy_11 + (z-(z2_ell+(z_dir2)))*xz_11)/a1)
+                                    
+                                    +SQR(((x-(x2_ell+(x_dir2)))*yx_22 + (y-(y2_ell+(y_dir2)))*yy_22 + (z-(z2_ell+(z_dir2)))*yz_22)/b1)
+                                    
+                                    +SQR(((x-(x2_ell+(x_dir2)))*zx_33 + (y-(y2_ell+(y_dir2)))*zy_33 + (z-(z2_ell+(z_dir2)))*zz_33)/c1))-0.02;
+                        
+                        
+                        
+                        
+                        // approximation of distance between the two: add dist + dist2
+                        
+                        //                     counter = Find_collision(x, y, z, counter ,'5',phi5);
+                        global_dist_6 = Find_distance(x, y, z ,'6',phi6);
+                        bounter = Find_collision(x,y,z,'6',phi5,phi6);
+                        
+                        delta_t = delta_t/2;
+                        shounter2 = delta_t;
+                        
+                    }
+                    
+                    if (bounter == 0)
+                    {
+                        
+                        //                     phi6 = sqrt(SQR((x-(last_x2))/a1)+SQR((y-(last_y2))/b1)+SQR((z-(last_z2))/c1))-0.025;
+                        
+                        //                     phi6 = sqrt(SQR((x-(x2_ell+(x_dir2)))/a1)+SQR((y-(y2_ell+(y_dir2)))/b1)+
+                        //                                 SQR((z-(z2_ell+(1*(z_dir2))))/c1))-0.02;
+                        
+                        phi6 = sqrt(SQR(((x-(x2_ell+(x_dir2)))*xx_11 + (y-(y2_ell+(y_dir2)))*xy_11 + (z-(z2_ell+(z_dir2)))*xz_11)/a1)
+                                    
+                                    +SQR(((x-(x2_ell+(x_dir2)))*yx_22 + (y-(y2_ell+(y_dir2)))*yy_22 + (z-(z2_ell+(z_dir2)))*yz_22)/b1)
+                                    
+                                    +SQR(((x-(x2_ell+(x_dir2)))*zx_33 + (y-(y2_ell+(y_dir2)))*zy_33 + (z-(z2_ell+(z_dir2)))*zz_33)/c1))-0.02;
+                        
+                        
+                        
+                        last_x2 = x2_ell+(1*(velocity(1)*delta_t));
+                        last_y2 = y2_ell+(1*(velocity(2)*delta_t));
+                        last_z2 = z2_ell+(1*(velocity(3)*delta_t));
+                        
+                        
+                    }
+                    
+                    else
+                    {
+                        phi6 = sqrt(SQR((x-(last_x2))/a1) + SQR((y-(last_y2))/b1) + SQR((z-(last_z2))/c1))-0.02;
+                        //                     cout << last_x2;
+                    }
+                    
+                    
+                    global_collision2 = bounter;
+                    
                 }
                 
                 
-                global_collision2 = bounter;
                 
             }
             
@@ -940,7 +938,7 @@ public:
         double z = tr.get_Cell(c).kcenter();
         
         if (level_set(x,y,z) < 0.001)
-            return true;
+        return true;
         return false;
         
     }
@@ -1035,7 +1033,7 @@ int main(int argc, char **argv)
     /* ************************************ */
     // this are defined in the cpp files Make_Folders.cpp
     /* CREATE A DIRECTORY FOR THE OUTPUT BASED ON THE TASK */
-    MakeFolder(hole,DiffRXN,DiffOnly,D_psi, D_zeta, gamma_AtoB, gamma_BtoA, max_level, min_level, tOrder,
+    MakeFolder(compart, hole,DiffRXN,DiffOnly,D_psi, D_zeta, gamma_AtoB, gamma_BtoA, max_level, min_level, tOrder,
                &txtPathA,&txtPathB,&daughterPathA,&daughterPathB,&motherPathB,&motherPathA, FolderPath,initCond,FullPath,&Return_FolderPAth);
     
     FullPath = Return_FolderPAth;
@@ -1205,22 +1203,6 @@ int main(int argc, char **argv)
         bc_psi.setWallValues(wall_psi_neumann_value);
         bc_psi.setInterfaceType(NEUMANN);
         bc_psi.setInterfaceValue(int_psi_neumann_value);
-        
-        //        if (n > 0)
-        //        {
-        
-        //            cout << "+++++++++++++++ Previous Iteration ++++++++++++++++" << endl;
-        //            cout << coll_counter1 << " collsions of Phi " << whichOne1 <<" compartments detected" << endl;
-        //            cout << "++++++++++++++++++++++++++++++++++++++++" << endl;
-        //            cout << coll_counter2 << " collsions of Phi " << whichOne2 <<" compartments detected" << endl;
-        //            cout << "++++++++++++++++++++++++++++++++++++++++" << endl;
-        //            cout<<"Resetting counters to 0 " << endl;
-        //            // reset counters
-        //            coll_counter1 = 0;
-        //            coll_counter2 = 0;
-        
-        //        }
-        
         
         // at time step 0 we do not want to solve anything, just intital conditions
         if (n > 0)
@@ -1456,54 +1438,49 @@ int main(int argc, char **argv)
         
         // We don't need to output any of these for now!!
         
-        /*
-         double mother_psi = total_psi - only_daughter_psi ;
-         double mother_zeta =  total_zeta - only_daughter_zeta ;
-         
-         
-         cout << "Psi in Daughter: " << only_daughter_psi << endl;
-         cout << "Zeta in Daughter: " << only_daughter_zeta << endl;
-         
-         cout << "total mass in daughter cell : "<< only_daughter_psi + 2* only_daughter_zeta << endl;
-         cout << "total mass in mother cell : "<< mother_psi + 2 * mother_zeta << endl;
-         
-         // No need for this with the our new FV method
-         //            ls.extrapolate_Along_Normal_Using_Cells(psi_n, bc_psi);
-         //            ls.extrapolate_Along_Normal_Using_Cells(zeta_n, bc_zeta);
-         
-         total_psi = ls.integral_Cell_Based(psi_n);
-         total_zeta = ls.integral_Cell_Based(zeta_n);
-         
-         // function call for detecting NaNs and throwing exceptions
-         /////////////////////////////
-         IsNan(total_psi,total_zeta);
-         /////////////////////////////
-         
-         cout << "Current Total Psi: "<< total_psi << endl;
-         cout << "Current Total zeta: "<< total_zeta << endl;
-         
-         // individual masses of species
-         filestream << n << "     " << total_psi << endl;
-         filestream2 << n << "     " << total_zeta << endl;
-         
-         // individual masses of species in daughter cell
-         daughterStreamA << n << "     " << only_daughter_psi << endl;
-         daughterStreamB<< n << "     " << only_daughter_zeta << endl;
-         
-         // individual masses of species in mother cell
-         motherStreamA << n << "     " << mother_psi << endl;
-         motherStreamB<< n << "     " << mother_zeta << endl;
-         
-         // we have A + A = B -> B = 2A
-         cout << "***********************************" << endl;
-         cout << "Current Total mass: " << total_psi + 2 * total_zeta << endl;
-         cout << "-----------------------------------" << endl;
-         
-         
-         
-         
-         
-         */
+        double mother_psi = total_psi - only_daughter_psi ;
+        double mother_zeta =  total_zeta - only_daughter_zeta ;
+        
+        
+        cout << "Psi in Daughter: " << only_daughter_psi << endl;
+        cout << "Zeta in Daughter: " << only_daughter_zeta << endl;
+        
+        cout << "total mass in daughter cell : "<< only_daughter_psi + 2* only_daughter_zeta << endl;
+        cout << "total mass in mother cell : "<< mother_psi + 2 * mother_zeta << endl;
+        
+        // No need for this with the our new FV method
+        //            ls.extrapolate_Along_Normal_Using_Cells(psi_n, bc_psi);
+        //            ls.extrapolate_Along_Normal_Using_Cells(zeta_n, bc_zeta);
+        
+        total_psi = ls.integral_Cell_Based(psi_n);
+        total_zeta = ls.integral_Cell_Based(zeta_n);
+        
+        // function call for detecting NaNs and throwing exceptions
+        /////////////////////////////
+        IsNan(total_psi,total_zeta);
+        /////////////////////////////
+        
+        cout << "Current Total Psi: "<< total_psi << endl;
+        cout << "Current Total zeta: "<< total_zeta << endl;
+        
+        // individual masses of species
+        filestream << n << "     " << total_psi << endl;
+        filestream2 << n << "     " << total_zeta << endl;
+        
+        // individual masses of species in daughter cell
+        daughterStreamA << n << "     " << only_daughter_psi << endl;
+        daughterStreamB<< n << "     " << only_daughter_zeta << endl;
+        
+        // individual masses of species in mother cell
+        motherStreamA << n << "     " << mother_psi << endl;
+        motherStreamB<< n << "     " << mother_zeta << endl;
+        
+        // we have A + A = B -> B = 2A
+        cout << "***********************************" << endl;
+        cout << "Current Total mass: " << total_psi + 2 * total_zeta << endl;
+        cout << "-----------------------------------" << endl;
+        
+        
         
         t += dt;
         new_octree.make_It_Have_Root_Cell_Only();
@@ -1591,6 +1568,15 @@ int main(int argc, char **argv)
         
         char file_name [500];
         
+        ArrayV<double> levels(my_octree.number_Of_Leaves());
+#ifdef CASL_OPENMP
+#pragma omp parallel for
+#endif
+        for(CaslInt l=0; l<my_octree.number_Of_Leaves(); l++)
+        {
+            levels(l) = log( (double) OcTreeStatic::MAX_NUMBER_OF_NODES_IN_ONE_DIRECTION_OCTREE /my_octree.get_Leaf(l).size())/log(2.);
+        }
+        
         sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
         my_octree.print_VTK_Format(file_name);
         my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
@@ -1601,11 +1587,10 @@ int main(int argc, char **argv)
         my_octree.print_VTK_Format_Cell(psi_n, "psi",file_name);
         //ZETA
         my_octree.print_VTK_Format_Cell(zeta_n, "zeta",file_name);
-        
+        my_octree.print_VTK_Format_Cell(levels,"level",file_name);
         
         n++;
-        // update the random direction we are going in
-        //        direction = rand() / (RAND_MAX + 1. + epsilon);
+        
     }
     
     return 0;
@@ -1614,37 +1599,3 @@ int main(int argc, char **argv)
 
 
 
-
-
-
-
-
-
-/// dumps
-
-//                     phi5 = sqrt(SQR((x-x1_ell)/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-z1_ell)/c1))-0.02;
-//                     if (0 <= direction && direction < 0.33)
-////                     {   cout<< "Move in X" << endl;
-//                     {
-////                         cout<< t <<endl;
-//                         phi5 = sqrt(SQR((x-x1_ell+(0.1*(t*delta_t)))/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-z1_ell)/c1))-0.02;
-//                         dist = phi5 - MAX(MIN(phi1,phi2),-1*phi3);
-
-//                     }
-
-//                     else if (0.33 <= direction && direction < 0.66)
-////                     {   cout<< "Move iny" << endl;
-//                     {
-////                         cout<<"YOU"<<endl;
-//                         phi5 = sqrt(SQR((x-x1_ell)/a1)+SQR((y-(y1_ell+(0.1*(t*delta_t))-0.17))/b1)+SQR((z-z1_ell)/c1))-0.02;
-//                         dist = phi5 - MAX(MIN(phi1,phi2),-1*phi3);
-
-//                     }
-
-//                     else
-//                     {
-
-//                         phi5 = sqrt(SQR((x-x1_ell)/a1)+SQR((y-(y1_ell-0.17))/b1)+SQR((z-z1_ell+(0.1*(t*delta_t)))/c1))-0.02;
-//                         dist = phi5 - MAX(MIN(phi1,phi2),-1*phi3);
-
-//                     }
