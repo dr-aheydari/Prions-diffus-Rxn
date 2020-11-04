@@ -80,8 +80,8 @@ double dt_const = 1000.;
 ////////////
 // run min 5, max 7 for camera ready
 
-int min_level = 4; //for our adaptive meshing
-int max_level = 8; //for our adaptive meshing
+int min_level = 2; //for our adaptive meshing
+int max_level = 6; //for our adaptive meshing
 ////////////
 
 // System parameters
@@ -130,7 +130,7 @@ char initCond = 'r';
 // Level_set
 class LS : public CF_3
 {
-public:
+    public:
     LS() //this is the Level Set Function.
     {
         lip = 1.; //Lipschitz constant, for adaptive meshing purposes
@@ -191,15 +191,15 @@ public:
         
         // since we are only considering an expanding mother cell
         return phi1;
-            
+        
     }
     
     double operator() (double x, double y, double z) const
     {
-
+        
         double phi1 = Assign_phi(x,y,z);
         return phi1;
-
+        
     }
     
 } level_set;
@@ -208,7 +208,7 @@ public:
 
 class Daughter_LvlSet : public CF_3
 {
-public:
+    public:
     Daughter_LvlSet() //this is the Level Set Function.
     {
         lip = 1.; //Lipschitz constant, not important for us
@@ -289,7 +289,7 @@ public:
 
 class SplitCriteria : public SplitCriteriaOcTree //split criteria for the adaptive meshing
 {
-public:
+    public:
     
     bool operator ()(const OcTree& tr, CaslInt c) const
     {
@@ -298,7 +298,7 @@ public:
         double z = tr.get_Cell(c).kcenter();
         
         if (level_set(x,y,z) < 0.001)
-            return true;
+        return true;
         return false;
         
     }
@@ -310,7 +310,7 @@ zeta_Initial_Solution zeta_initial;
 // Neumann Boundary condition
 class WallBcPsiType : public WallBC3D
 {
-public:
+    public:
     BoundaryConditionType operator()( double x, double y , double z) const
     {
         return NEUMANN; //just calling the class from Maxime's solver (for next parts as well)
@@ -318,7 +318,7 @@ public:
 } wall_psi_neumann_type;
 class WallBcPsiValues : public CF_3
 {
-public:
+    public:
     double operator()(double x, double y, double z) const
     {
         return 0.;
@@ -326,7 +326,7 @@ public:
 } wall_psi_neumann_value;
 class IntBcPsiType : public WallBC3D
 {
-public:
+    public:
     BoundaryConditionType operator()( double x, double y , double z) const
     {
         return NEUMANN;
@@ -334,7 +334,7 @@ public:
 } int_psi_neumann_type;
 class IntBcPsiValues : public CF_3
 {
-public:
+    public:
     double operator()(double x, double y, double z) const
     {
         return 0.;
@@ -345,7 +345,7 @@ public:
 // ZETA BOUNDARY CONDITION
 class WallBcZetaType : public WallBC3D
 {
-public:
+    public:
     BoundaryConditionType operator()( double x, double y, double z) const
     {
         return NEUMANN;
@@ -353,7 +353,7 @@ public:
 } wall_zeta_neumann_type;
 class WallBcZetaValues : public CF_3
 {
-public:
+    public:
     double operator()(double x, double y, double z) const
     {
         return 0.;
@@ -361,7 +361,7 @@ public:
 } wall_zeta_neumann_value;
 class IntBcZetaType : public WallBC3D
 {
-public:
+    public:
     BoundaryConditionType operator()(double x, double y, double z) const
     {
         return NEUMANN;
@@ -393,8 +393,8 @@ int main(int argc, char **argv)
     /* ************************************ */
     // this are defined in the cpp files Make_Folders.cpp
     /* CREATE A DIRECTORY FOR THE OUTPUT BASED ON THE TASK */
-
-
+    
+    
     MakeFolder(compart, hole,DiffRXN,DiffOnly,D_psi, D_zeta, gamma_AtoB, gamma_BtoA, max_level, min_level, tOrder,
                &txtPathA,&txtPathB,&daughterPathA,&daughterPathB,&motherPathB,&motherPathA, FolderPath,initCond,FullPath,&Return_FolderPAth);
     
@@ -477,12 +477,12 @@ int main(int argc, char **argv)
     /***************************************************/
     
     // MAIN WHILE LOOP
-
-
+    
+    
     
     while (t <= T)
     {
-
+        
         cout<<"Here is my dt: " << dt << endl;
         cout<<"We are at step: "<<n<<" at time = "<<t<<endl;
         OcTreeSolverCellCenteredPoisson poisson_solver;
@@ -633,7 +633,7 @@ int main(int argc, char **argv)
             ArrayV<double> zeta_updated;
             zeta_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
             
-            //#pragma omp parallel for   
+            //#pragma omp parallel for
             for (int i = 0; i < zeta_updated.size(); i++) //because we got adding array operator, just inbetween step
             {
                 // rhs
@@ -690,12 +690,12 @@ int main(int argc, char **argv)
                                           level_set_n(my_octree.get_Cell(c).node_ppm()),level_set_n(my_octree.get_Cell(c).node_ppp()));
                 double Vn = cube.volume_In_Negative_Domain(leveset_n_values);
                 
-                //integrate and divide by future volume Vn so that its cancel after solver integrate over Vn     
+                //integrate and divide by future volume Vn so that its cancel after solver integrate over Vn
                 rhs_z(i) *=Vnm1/MAX(EPSILON,Vn);
                 
                 
             }
-
+            
             poisson_solver.set_bc(bc_zeta);
             poisson_solver.set_Rhs(rhs_z);
             poisson_solver.set_Linear_Solver(solver_PETSC);
@@ -709,7 +709,7 @@ int main(int argc, char **argv)
         }
         //        zeta_n.CHK_NAN();
         //        psi_n.CHK_NAN();
-
+        
         // No need for this with the our new FV method
         //            ls.extrapolate_Along_Normal_Using_Cells(psi_n, bc_psi);
         //            ls.extrapolate_Along_Normal_Using_Cells(zeta_n, bc_zeta);
@@ -735,7 +735,7 @@ int main(int argc, char **argv)
         cout << "-----------------------------------" << endl;
         
         t += dt;
-
+        
         new_octree.make_It_Have_Root_Cell_Only();
         new_octree.set_Grid(0.,xL,0.,yL,0.,zL);
         new_octree.construct_Octree_From_Level_Function(level_set, min_level, max_level);
@@ -796,7 +796,7 @@ int main(int argc, char **argv)
         double dx,dy,dz;
         my_octree.dx_dy_dz_smallest(dx,dy,dz);
         ls_nodes.perturb_Level_Function(1E-2*dx);
-
+        
         ArrayV<double> psi_node(my_octree.number_Of_Nodes());
         //ZETA
         ArrayV<double> zeta_node(my_octree.number_Of_Nodes());
@@ -812,21 +812,21 @@ int main(int argc, char **argv)
             zeta_node(n) = interpolation_LSQR_Cell_Centered(my_octree, zeta_n, x, y, x, NEUMANN, level_set_n);
         }
         
-// for now I don't want to have any simulations here
-
-//        char file_name [500];
+        // for now I don't want to have any simulations here
         
-//        sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
-//        my_octree.print_VTK_Format(file_name);
-//        my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
-//        my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
-//        //ZETA
-//        my_octree.print_VTK_Format(zeta_node, "zeta_node",file_name);
-//        my_octree.print_VTK_Format_Switch_To_Cell(file_name);
-//        my_octree.print_VTK_Format_Cell(psi_n, "psi",file_name);
-//        //ZETA
-//        my_octree.print_VTK_Format_Cell(zeta_n, "zeta",file_name);
-
+        char file_name [500];
+        
+        sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
+        my_octree.print_VTK_Format(file_name);
+        my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
+        my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
+        //ZETA
+        my_octree.print_VTK_Format(zeta_node, "zeta_node",file_name);
+        my_octree.print_VTK_Format_Switch_To_Cell(file_name);
+        my_octree.print_VTK_Format_Cell(psi_n, "psi",file_name);
+        //ZETA
+        my_octree.print_VTK_Format_Cell(zeta_n, "zeta",file_name);
+        
         n++;
         // change this
         double smallest_dx = xL/std::pow(2,max_level);
@@ -836,4 +836,3 @@ int main(int argc, char **argv)
     
     return 0;
 }
-
