@@ -80,8 +80,8 @@ double dt_const = 1000.;
 ////////////
 // run min 5, max 7 for camera ready
 
-int min_level = 2; //for our adaptive meshing
-int max_level = 6; //for our adaptive meshing
+int min_level = 4; //for our adaptive meshing
+int max_level = 8; //for our adaptive meshing
 ////////////
 
 // System parameters
@@ -123,7 +123,10 @@ string Return_FolderPAth;
 // r -> Random IC
 // n -> Gaussian Normal IC
 // u -> Uniform IC
-char initCond = 'r';
+
+// we will do a Gaussian IC to get rid of spikes in mass distribution
+// // (which happens with random IC)
+char initCond = 'n';
 
 
 
