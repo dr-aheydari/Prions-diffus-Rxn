@@ -1,3 +1,19 @@
+# to run with OMP on macOS
+macx:
+{
+QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp -lomp -I/usr/local/include
+}
+macx:
+{
+QMAKE_LFLAGS += -lomp
+}
+
+macx:
+{
+LIBS += -L /usr/local/lib /usr/local/lib/libomp.dylib
+}
+
+
 # mains
 SOURCES += \
 #example_mains/QuadTreeSolverNodeBasedPoissonJump_example_main.cpp\
