@@ -80,8 +80,8 @@ double dt_const = 1000.;
 ////////////
 // run min 5, max 7 for camera ready
 
-int min_level = 3; //for our adaptive meshing
-int max_level = 7; //for our adaptive meshing
+int min_level = 4; //for our adaptive meshing
+int max_level = 8; //for our adaptive meshing
 ////////////
 
 // System parameters
