@@ -82,8 +82,8 @@ double dt_const = 1000.;
 ////////////
 // run min 5, max 7 for camera ready
 
-int min_level = 2; //for our adaptive meshing
-int max_level = 6; //for our adaptive meshing
+int min_level = 4; //for our adaptive meshing
+int max_level = 8; //for our adaptive meshing
 ////////////
 
 // System parameters
@@ -166,7 +166,7 @@ public:
     // // //
     
     double r1_start = 0.05; // radius for the changing domain
-//    double r1_start = 0.25; //radius for fixed domain
+    //    double r1_start = 0.25; //radius for fixed domain
     
     // so that we have mass conservation:
     double r2_start = 0.02; // + (0.005 * t); //another radius
@@ -186,26 +186,26 @@ public:
     {
         
         double phi1;
-        // (x-x1_start) *(y-y1_start) * (z-z1_start); //mother        
+        // (x-x1_start) *(y-y1_start) * (z-z1_start); //mother
         // Changed it to y1 start so that we start at the center of the mother cell
         // to make the daughter cell not exit the domain
         
         // changing
-//        phi1 = sqrt(SQR(x-x1_start)+SQR(y-(y1_start*(1+0.05*t)))+SQR(z-z1_start))-(r1_start+alpha2*t);
+        phi1 = sqrt(SQR(x-x1_start)+SQR(y-(y1_start*(1+0.05*t)))+SQR(z-z1_start))-(r1_start+alpha2*t);
         //fixed sphere
-        phi1 = sqrt(SQR(x)+SQR(y)+SQR(z))-(r1_start);
+        //        phi1 = sqrt(SQR(x)+SQR(y)+SQR(z))-(r1_start);
         
         // since we are only considering an expanding mother cell
         return phi1;
-            
+        
     }
     
     double operator() (double x, double y, double z) const
     {
-
+        
         double phi1 = Assign_phi(x,y,z);
         return phi1;
-
+        
     }
     
 } level_set;
@@ -249,7 +249,7 @@ public:
     {
         return 0;
     }
-
+    
 } wall_psi_neumann_value;
 class IntBcPsiType : public WallBC3D
 {
@@ -266,43 +266,43 @@ class IntBcPsiValues : public CF_3
 public:
     double operator()(double x, double y, double z) const
     {
-//        double r1_start = 0.05; // radius for the changing domain
-//        //    double r1_start = 0.25; //radius for fixed domain
-
-//        // so that we have mass conservation:
-//        double r2_start = 0.02; // + (0.005 * t); //another radius
-
-//        double alpha2 = (r1_start * (0.873580464) - r2_start)/2;
-
-//        double x1_start = xL/2.; //where we center sphere
-//        double y1_start = 0.25;
-//        double z1_start = zL/2.;
-
-//        double ls_grad = (x-x1_start) + (y-(y1_start*(1+0.05*t))) + (z-z1_start);
-
-//        double r = sqrt(SQR(x-x1_start)+SQR(y-(y1_start*(1+0.05*t)))+SQR(z-z1_start));
-//        double psi_exact = exp(x + y + z + t);
-
-//        return (1/r) * psi_exact * ls_grad;
-
         double r1_start = 0.05; // radius for the changing domain
         //    double r1_start = 0.25; //radius for fixed domain
-
+        
         // so that we have mass conservation:
         double r2_start = 0.02; // + (0.005 * t); //another radius
-
+        
         double alpha2 = (r1_start * (0.873580464) - r2_start)/2;
-
+        
         double x1_start = xL/2.; //where we center sphere
         double y1_start = 0.25;
         double z1_start = zL/2.;
-
-        double r = sqrt(SQR(x)+SQR(y)+SQR(z));
+        
+        double ls_grad = (x-x1_start) + (y-(y1_start*(1+0.05*t))) + (z-z1_start);
+        
+        double r = sqrt(SQR(x-x1_start)+SQR(y-(y1_start*(1+0.05*t)))+SQR(z-z1_start));
         double psi_exact = exp(x + y + z + t);
-
-        return (1/r) * psi_exact * (x+y+z);
-
-
+        
+        return (1/r) * psi_exact * ls_grad;
+        
+        //        double r1_start = 0.05; // radius for the changing domain
+        //        //    double r1_start = 0.25; //radius for fixed domain
+        
+        //        // so that we have mass conservation:
+        //        double r2_start = 0.02; // + (0.005 * t); //another radius
+        
+        //        double alpha2 = (r1_start * (0.873580464) - r2_start)/2;
+        
+        //        double x1_start = xL/2.; //where we center sphere
+        //        double y1_start = 0.25;
+        //        double z1_start = zL/2.;
+        
+        //        double r = sqrt(SQR(x)+SQR(y)+SQR(z));
+        //        double psi_exact = exp(x + y + z + t);
+        
+        //        return (1/r) * psi_exact * (x+y+z);
+        
+        
     }
 } int_psi_neumann_value;
 
@@ -326,8 +326,8 @@ int main(int argc, char **argv)
     /* ************************************ */
     // this are defined in the cpp files Make_Folders.cpp
     /* CREATE A DIRECTORY FOR THE OUTPUT BASED ON THE TASK */
-
-
+    
+    
     MakeFolder(compart, hole,DiffRXN,DiffOnly,D_psi, D_zeta, gamma_AtoB, gamma_BtoA, max_level, min_level, tOrder,
                &txtPathA,&txtPathB,&daughterPathA,&daughterPathB,&motherPathB,&motherPathA, FolderPath,initCond,FullPath,&Return_FolderPAth);
     
@@ -338,7 +338,9 @@ int main(int argc, char **argv)
     my_octree.set_Grid(0.,xL,0.,yL,0.,zL); //setting the grid
     my_octree.construct_Octree_From_Level_Function(level_set, min_level, max_level);
     my_octree.impose_Uniform_Grid_On_Interface(level_set,max_level,5);
+    // uniform grid here!!
     //    my_octree.construct_Uniform_Octree(max_level);
+    
     my_octree.initialize_Neighbors(); //talking about numerical cells as neighbors of each other
     
     
@@ -369,16 +371,16 @@ int main(int argc, char **argv)
         double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
         double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
         level_set_n(i) = level_set(x,y,z);
-//        psi_exact(i) = exp(x+y+z+t);
-        psi_exact(i) = exp((x)+(y)+(z) + t);
-
+        psi_exact(i) = exp(x + y + z + t);
+        
     }
+    
     psi_n = psi_exact;
     // to reinitialize the level-set and to take care of borderline cases
     OcTreeLevelSet ls_nodes(my_octree,level_set_n);
     ls_nodes.reinitialize();
     ls_nodes.perturb_Level_Function(1E-2*my_octree.dx_finest_resolution());
-
+    
     ls_nodes.set_Phi(level_set_n);
     ls_nodes.reinitialize();
     ls_nodes.perturb_Level_Function(1E-2*my_octree.dx_finest_resolution());
@@ -389,17 +391,17 @@ int main(int argc, char **argv)
     // print masses to files... here we initialize each file
     cout<<"PATH TXT: "<< txtPathA.c_str() <<endl;
     ofstream filestream(txtPathA.c_str());
-
+    
     
     /***************************************************/
     
     // MAIN WHILE LOOP
-
-
+    
+    
     
     while (t <= T)
     {
-
+        
         cout<<"Here is my dt: " << dt << endl;
         cout<<"We are at step: "<<n<<" at time = "<<t<<endl;
         OcTreeSolverCellCenteredPoisson poisson_solver;
@@ -408,254 +410,264 @@ int main(int argc, char **argv)
         bc_psi.setWallTypes(wall_psi_neumann_type);
         bc_psi.setWallValues(wall_psi_neumann_value);
         bc_psi.setInterfaceType(NEUMANN);
-        bc_psi.setInterfaceValue(int_psi_neumann_value);   
+        bc_psi.setInterfaceValue(int_psi_neumann_value);
         
         double total_psi;
         double total_psi_exact;
-
+        
         OcTreeCellBasedLevelSet ls;
         ls.set_Octree(my_octree);
         ls.set_Phi(level_set_n);
-
-
+        
+        
+        
         if (n==0)
-            {
-                total_psi = ls.integral_Cell_Based(psi_n);
-                total_psi_exact = ls.integral_Cell_Based(psi_exact);
-
-                ArrayV<double> psi_node(my_octree.number_Of_Nodes());
-                ArrayV<double> psi_exact_node(my_octree.number_Of_Nodes());
-
-    #pragma omp parallel for
+        {
+            total_psi = ls.integral_Cell_Based(psi_n);
+            total_psi_exact = ls.integral_Cell_Based(psi_exact);
+            
+            ArrayV<double> psi_node(my_octree.number_Of_Nodes());
+            ArrayV<double> psi_exact_node(my_octree.number_Of_Nodes());
+            
+#pragma omp parallel for
             for (CaslInt n = 0; n<my_octree.number_Of_Nodes(); n++)
-                {
-                    double x = my_octree.x_fr_i(my_octree.get_Node(n).i);
-                    double y = my_octree.y_fr_j(my_octree.get_Node(n).j);
-                    double z = my_octree.z_fr_k(my_octree.get_Node(n).k);
-
-                    psi_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_n, x, y, z, NEUMANN, level_set_n);
-                    psi_exact_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_exact, x, y, z, NEUMANN, level_set_n);
-                }
-
-
-                cout << "***********************************" << endl;
-                cout << "Current Total mass: " << total_psi << endl;
-                cout << "-----------------------------------" << endl;
-
-                char file_name [500];
-
-                sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
-                my_octree.print_VTK_Format(file_name);
-                my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
-                my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
-                my_octree.print_VTK_Format(psi_exact_node, "psi_exact_node",file_name);
-                t += dt;
-
+            {
+                double x = my_octree.x_fr_i(my_octree.get_Node(n).i);
+                double y = my_octree.y_fr_j(my_octree.get_Node(n).j);
+                double z = my_octree.z_fr_k(my_octree.get_Node(n).k);
+                
+                psi_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_n, x, y, z, NEUMANN, level_set_n);
+                psi_exact_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_exact, x, y, z, NEUMANN, level_set_n);
             }
-
-
-
+            
+            
+            cout << "***********************************" << endl;
+            cout << "Current Total mass: " << total_psi << endl;
+            cout << "-----------------------------------" << endl;
+            
+            char file_name [500];
+            
+            sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
+            my_octree.print_VTK_Format(file_name);
+            my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
+            my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
+            my_octree.print_VTK_Format(psi_exact_node, "psi_exact_node",file_name);
+            t += dt;
+            
+            cout<< "+++++++++++++++++++++++++" << endl;
+            //            std::cout<<"L-1 Norm:"<< sols_diff.avg_Abs() <<std::endl;
+            //            std::cout<<"L-max Norm:"<<sols_diff.max_Abs() <<std::endl;
+            cout<<"VOLUME: "<< ls_nodes.volume_In_Negative_Domain() << endl;
+            err_t = ABS(total_psi - total_psi_exact)/pow(2,max_level);
+            cout<<"Error:"<< err_t <<endl;
+            cout<< "+++++++++++++++++++++++++" << endl;
+            
+        }
+        
+        
+        
         // at time step 0 we do not want to solve anything, just intital conditions
         if (n > 0)
+        {
+            ArrayV<double> psi_updated;
+            psi_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
+            
+            //#pragma omp parallel for
+            for (int i = 0; i < psi_updated.size(); i++) //because we got adding array operator, just inbetween step
             {
-                ArrayV<double> psi_updated;
-                psi_updated.resize_Without_Copy(my_octree.number_Of_Leaves());
-
-                //#pragma omp parallel for
-                for (int i = 0; i < psi_updated.size(); i++) //because we got adding array operator, just inbetween step
-                {
-                    // rhs
-                    psi_updated(i) = -2 * psi_n(i) * dt;
-                }
-
-                ArrayV<double> rhs = psi_updated;//previous right hand side, kind of like a placeholder
-                // here we will use the previous volume to integrate the rhs for mass conservation
-                ArrayV<double> level_set_nm1(my_octree.number_Of_Nodes());
-
-                t-=dt;
-        #pragma omp parallel for
-                for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
-                    {
-                        double x = my_octree.x_fr_i(my_octree.get_Node(i).i);
-                        double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
-                        double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
-                        level_set_nm1(i) = level_set(x,y,z);
-                    }
-                ls_nodes.set_Phi(level_set_nm1);
-                ls_nodes.set_Octree(my_octree);
-                ls_nodes.reinitialize();
-                ls_nodes.perturb_Level_Function(1E-2*my_octree.dx_finest_resolution());
-                t+=dt;
-                rhs.CHK_NAN();
-
-
-        #pragma omp parallel for
-                for (int i = 0; i < my_octree.number_Of_Leaves(); i++) //because we got adding array operator, just inbetween step
-                    {
-                        CaslInt c  = my_octree.leaf2cell(i);
-                        const OctCell& C = my_octree.get_Cell(c);
-                        // need to find the Vin and Vinp1 volumes
-                        Cube3 cube;
-                        // this is the cell C_i
-                        cube.x0 = my_octree.x_fr_i(C.imin());
-                        cube.x1 = my_octree.x_fr_i(C.imax());
-                        cube.y0 = my_octree.y_fr_j(C.jmin());
-                        cube.y1 = my_octree.y_fr_j(C.jmax());
-                        cube.z0 = my_octree.z_fr_k(C.kmin());
-                        cube.z1 = my_octree.z_fr_k(C.kmax());
-
-                        // this is the value of the level set a the corners of the cube
-                        OctValue leveset_nm1_values(level_set_nm1(my_octree.get_Cell(c).node_mmm()),level_set_nm1(my_octree.get_Cell(c).node_mmp()),
-                                                    level_set_nm1(my_octree.get_Cell(c).node_mpm()),level_set_nm1(my_octree.get_Cell(c).node_mpp()),
-                                                    level_set_nm1(my_octree.get_Cell(c).node_pmm()),level_set_nm1(my_octree.get_Cell(c).node_pmp()),
-                                                    level_set_nm1(my_octree.get_Cell(c).node_ppm()),level_set_nm1(my_octree.get_Cell(c).node_ppp()));
-
-                        double Vnm1 = cube.volume_In_Negative_Domain(leveset_nm1_values);
-                        OctValue leveset_n_values(level_set_n(my_octree.get_Cell(c).node_mmm()),level_set_n(my_octree.get_Cell(c).node_mmp()),
-                                                  level_set_n(my_octree.get_Cell(c).node_mpm()),level_set_n(my_octree.get_Cell(c).node_mpp()),
-                                                  level_set_n(my_octree.get_Cell(c).node_pmm()),level_set_n(my_octree.get_Cell(c).node_pmp()),
-                                                  level_set_n(my_octree.get_Cell(c).node_ppm()),level_set_n(my_octree.get_Cell(c).node_ppp()));
-                        double Vn = cube.volume_In_Negative_Domain(leveset_n_values);
-
-                        //integrate and divide by future volume Vn so that its cancel after solver integrate over Vn
-                        rhs(i) *=Vnm1/MAX(EPSILON,Vn);
-
-                    }
-
-                rhs.CHK_NAN();
-                cout<<rhs.max_Abs()<<endl;
-                cout<<rhs.min()<<endl;
-                //ArrayV<double> rhs = psi_nm1;
-                poisson_solver.set_bc(bc_psi);
-                poisson_solver.set_Rhs(rhs);
-                // the diagonals here are what need to be changed if we want to add reaction terms
-                poisson_solver.set_Diagonal_Increment(1.0 + (mu * dt) + (dt * gamma_AtoB));
-
-                poisson_solver.set_mu(dt*D_psi);
-                poisson_solver.set_Phi(level_set_n);
-                poisson_solver.set_Linear_Solver(solver_PETSC);
-                poisson_solver.solve(psi_n); //we then solve for psi_n
-                psi_n.CHK_NAN();
-
-
-
-
-                OcTreeCellBasedLevelSet ls;
-                ls.set_Octree(my_octree);
-                ls.set_Phi(level_set_n);
-
-
-                total_psi = ls.integral_Cell_Based(psi_n);
-                total_psi_exact = ls.integral_Cell_Based(psi_exact);
-
-                cout << "Current Total Psi: "<< total_psi << endl;
-                cout << "Current Total Psi Exact: "<< total_psi_exact << endl;
-
-
-                cout << "***********************************" << endl;
-                cout << "Current Total mass: " << total_psi << endl;
-                cout << "-----------------------------------" << endl;
-
-
-                new_octree.make_It_Have_Root_Cell_Only();
-                new_octree.set_Grid(0.,xL,0.,yL,0.,zL);
-                new_octree.construct_Octree_From_Level_Function(level_set, min_level, max_level);
-                new_octree.impose_Uniform_Grid_On_Interface(level_set,max_level,5);
-
-                new_octree.initialize_Neighbors();
-
-
-
-                // update the quatity in the new mesh
-                ArrayV <double> new_psi_n (new_octree.number_Of_Leaves());
-            #pragma omp parallel for
-                for (CaslInt leaf = 0; leaf<new_octree.number_Of_Leaves(); leaf++)
-                    {
-                        double x = new_octree.x_fr_i(new_octree.get_Leaf(leaf).icenter());
-                        double y = new_octree.y_fr_j(new_octree.get_Leaf(leaf).jcenter());
-                        double z = new_octree.z_fr_k(new_octree.get_Leaf(leaf).kcenter());
-
-                        new_psi_n(leaf) = interpolation_LSQR_Cell_Centered(my_octree,psi_n, x, y, z, NEUMANN, level_set_n);
-                    }
-                // for visu only
-                my_octree = new_octree;
-                psi_nm1 = new_psi_n;
-                psi_n = new_psi_n;
-
-
-                level_set_n.resize_Without_Copy(my_octree.number_Of_Nodes());
-                psi_exact.resize_Without_Copy(my_octree.number_Of_Nodes());
-
-            #pragma omp parallel for
-                for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
-                    {
-                        double x = my_octree.x_fr_i(my_octree.get_Node(i).i);
-                        double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
-                        double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
-                        level_set_n(i) = level_set(x,y,z);
-                        psi_exact(i) = exp(x+y+z+t);
-
-                    }
-
-                // to reinitialize the level-set and to take care of borderline cases
-                ls_nodes.set_Phi(level_set_n);
-                ls_nodes.set_Octree(my_octree);
-                ls_nodes.reinitialize();
-                double dx,dy,dz;
-                my_octree.dx_dy_dz_smallest(dx,dy,dz);
-                ls_nodes.perturb_Level_Function(1E-2*dx);
-
-                ArrayV<double> psi_node(my_octree.number_Of_Nodes());
-                ArrayV<double> psi_exact_node(my_octree.number_Of_Nodes());
-                ArrayV<double> sols_diff(my_octree.number_Of_Nodes());
-                sols_diff.resize_Without_Copy(my_octree.number_Of_Nodes());
-
-
-
-            #pragma omp parallel for
-                for (CaslInt n = 0; n<my_octree.number_Of_Nodes(); n++)
-                    {
-                        double x = my_octree.x_fr_i(my_octree.get_Node(n).i);
-                        double y = my_octree.y_fr_j(my_octree.get_Node(n).j);
-                        double z = my_octree.z_fr_k(my_octree.get_Node(n).k);
-
-                        psi_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_n, x, y, z, NEUMANN, level_set_n);
-                        psi_exact_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_exact, x, y, z, NEUMANN, level_set_n);
-
-                    }
-
-
+                // rhs
+                psi_updated(i) = psi_n(i) + (dt * -2 * psi_n(i));
+            }
+            
+            ArrayV<double> rhs = psi_updated;//previous right hand side, kind of like a placeholder
+            // here we will use the previous volume to integrate the rhs for mass conservation
+            ArrayV<double> level_set_nm1(my_octree.number_Of_Nodes());
+            
+            t-=dt;
+#pragma omp parallel for
+            for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
+            {
+                double x = my_octree.x_fr_i(my_octree.get_Node(i).i);
+                double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
+                double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
+                level_set_nm1(i) = level_set(x,y,z);
+            }
+            ls_nodes.set_Phi(level_set_nm1);
+            ls_nodes.set_Octree(my_octree);
+            ls_nodes.reinitialize();
+            ls_nodes.perturb_Level_Function(1E-2*my_octree.dx_finest_resolution());
+            
+            t+=dt;
+            rhs.CHK_NAN();
+            
+            
+#pragma omp parallel for
+            for (int i = 0; i < my_octree.number_Of_Leaves(); i++) //because we got adding array operator, just inbetween step
+            {
+                CaslInt c  = my_octree.leaf2cell(i);
+                const OctCell& C = my_octree.get_Cell(c);
+                // need to find the Vin and Vinp1 volumes
+                Cube3 cube;
+                // this is the cell C_i
+                cube.x0 = my_octree.x_fr_i(C.imin());
+                cube.x1 = my_octree.x_fr_i(C.imax());
+                cube.y0 = my_octree.y_fr_j(C.jmin());
+                cube.y1 = my_octree.y_fr_j(C.jmax());
+                cube.z0 = my_octree.z_fr_k(C.kmin());
+                cube.z1 = my_octree.z_fr_k(C.kmax());
+                
+                // this is the value of the level set a the corners of the cube
+                OctValue leveset_nm1_values(level_set_nm1(my_octree.get_Cell(c).node_mmm()),level_set_nm1(my_octree.get_Cell(c).node_mmp()),
+                                            level_set_nm1(my_octree.get_Cell(c).node_mpm()),level_set_nm1(my_octree.get_Cell(c).node_mpp()),
+                                            level_set_nm1(my_octree.get_Cell(c).node_pmm()),level_set_nm1(my_octree.get_Cell(c).node_pmp()),
+                                            level_set_nm1(my_octree.get_Cell(c).node_ppm()),level_set_nm1(my_octree.get_Cell(c).node_ppp()));
+                
+                double Vnm1 = cube.volume_In_Negative_Domain(leveset_nm1_values);
+                OctValue leveset_n_values(level_set_n(my_octree.get_Cell(c).node_mmm()),level_set_n(my_octree.get_Cell(c).node_mmp()),
+                                          level_set_n(my_octree.get_Cell(c).node_mpm()),level_set_n(my_octree.get_Cell(c).node_mpp()),
+                                          level_set_n(my_octree.get_Cell(c).node_pmm()),level_set_n(my_octree.get_Cell(c).node_pmp()),
+                                          level_set_n(my_octree.get_Cell(c).node_ppm()),level_set_n(my_octree.get_Cell(c).node_ppp()));
+                double Vn = cube.volume_In_Negative_Domain(leveset_n_values);
+                
+                //integrate and divide by future volume Vn so that its cancel after solver integrate over Vn
+                rhs(i) *=Vnm1/MAX(EPSILON,Vn);
+                
+            }
+            
+            rhs.CHK_NAN();
+            //                cout<<rhs.max_Abs()<<endl;
+            //                cout<<rhs.min()<<endl;
+            
+            //ArrayV<double> rhs = psi_nm1;
+            poisson_solver.set_bc(bc_psi);
+            poisson_solver.set_Rhs(rhs);
+            // the diagonals here are what need to be changed if we want to add reaction terms
+            poisson_solver.set_Diagonal_Increment(1.0 + (mu * dt) + (dt * gamma_AtoB));
+            
+            poisson_solver.set_mu(dt*D_psi);
+            poisson_solver.set_Phi(level_set_n);
+            poisson_solver.set_Linear_Solver(solver_PETSC);
+            poisson_solver.solve(psi_n); //we then solve for psi_n
+            psi_n.CHK_NAN();
+            
+            
+            
+            
+            OcTreeCellBasedLevelSet ls;
+            ls.set_Octree(my_octree);
+            ls.set_Phi(level_set_n);
+            
+            
+            total_psi = ls.integral_Cell_Based(psi_n);
+            total_psi_exact = ls.integral_Cell_Based(psi_exact);
+            
+            cout << "Current Total Psi: "<< total_psi << endl;
+            cout << "Current Total Psi Exact: "<< total_psi_exact << endl;
+            
+            
+            cout << "***********************************" << endl;
+            cout << "Current Total mass: " << total_psi << endl;
+            cout << "-----------------------------------" << endl;
+            
+            
+            new_octree.make_It_Have_Root_Cell_Only();
+            new_octree.set_Grid(0.,xL,0.,yL,0.,zL);
+            new_octree.construct_Octree_From_Level_Function(level_set, min_level, max_level);
+            new_octree.impose_Uniform_Grid_On_Interface(level_set,max_level,5);
+            
+            new_octree.initialize_Neighbors();
+            
+            
+            
+            // update the quatity in the new mesh
+            ArrayV <double> new_psi_n (new_octree.number_Of_Leaves());
+#pragma omp parallel for
+            for (CaslInt leaf = 0; leaf<new_octree.number_Of_Leaves(); leaf++)
+            {
+                double x = new_octree.x_fr_i(new_octree.get_Leaf(leaf).icenter());
+                double y = new_octree.y_fr_j(new_octree.get_Leaf(leaf).jcenter());
+                double z = new_octree.z_fr_k(new_octree.get_Leaf(leaf).kcenter());
+                
+                new_psi_n(leaf) = interpolation_LSQR_Cell_Centered(my_octree,psi_n, x, y, z, NEUMANN, level_set_n);
+            }
+            // for visu only
+            my_octree = new_octree;
+            psi_nm1 = new_psi_n;
+            psi_n = new_psi_n;
+            
+            
+            level_set_n.resize_Without_Copy(my_octree.number_Of_Nodes());
+            psi_exact.resize_Without_Copy(my_octree.number_Of_Nodes());
+            
+#pragma omp parallel for
+            for (int i = 0; i<my_octree.number_Of_Nodes(); i++)
+            {
+                double x = my_octree.x_fr_i(my_octree.get_Node(i).i);
+                double y = my_octree.y_fr_j(my_octree.get_Node(i).j);
+                double z = my_octree.z_fr_k(my_octree.get_Node(i).k);
+                level_set_n(i) = level_set(x,y,z);
+                psi_exact(i) = exp(x+y+z+t);
+                
+            }
+            
+            // to reinitialize the level-set and to take care of borderline cases
+            ls_nodes.set_Phi(level_set_n);
+            ls_nodes.set_Octree(my_octree);
+            ls_nodes.reinitialize();
+            double dx,dy,dz;
+            my_octree.dx_dy_dz_smallest(dx,dy,dz);
+            ls_nodes.perturb_Level_Function(1E-2*dx);
+            
+            ArrayV<double> psi_node(my_octree.number_Of_Nodes());
+            ArrayV<double> psi_exact_node(my_octree.number_Of_Nodes());
+            ArrayV<double> sols_diff(my_octree.number_Of_Nodes());
+            sols_diff.resize_Without_Copy(my_octree.number_Of_Nodes());
+            
+            
+            
+#pragma omp parallel for
+            for (CaslInt n = 0; n<my_octree.number_Of_Nodes(); n++)
+            {
+                double x = my_octree.x_fr_i(my_octree.get_Node(n).i);
+                double y = my_octree.y_fr_j(my_octree.get_Node(n).j);
+                double z = my_octree.z_fr_k(my_octree.get_Node(n).k);
+                
+                psi_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_n, x, y, z, NEUMANN, level_set_n);
+                psi_exact_node(n) = interpolation_LSQR_Cell_Centered(my_octree, psi_exact, x, y, z, NEUMANN, level_set_n);
+                
+            }
+            
+            
             // for now I don't want to have any simulations here
-
-                char file_name [500];
-
-                sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
-                my_octree.print_VTK_Format(file_name);
-                my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
-                my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
-                my_octree.print_VTK_Format(psi_exact, "psi_exact_node",file_name);
-
-                ////////////////////////////////////////////////////Error-Analysis////////////////////////////////////////////////////////
-                cout<< "+++++++++++++++++++++++++" << endl;
-    //            std::cout<<"L-1 Norm:"<< sols_diff.avg_Abs() <<std::endl;
-    //            std::cout<<"L-max Norm:"<<sols_diff.max_Abs() <<std::endl;
-
-                err_t = ABS(total_psi - total_psi_exact);
-                std::cout<<"Error:"<< err_t <<std::endl;
-                cout<< "+++++++++++++++++++++++++" << endl;
-
-                }
-
+            
+            char file_name [500];
+            
+            sprintf(file_name,  "%s/cell_splitting_%d.vtk",FullPath.c_str(),n);
+            my_octree.print_VTK_Format(file_name);
+            my_octree.print_VTK_Format(level_set_n, "level_set",file_name);
+            my_octree.print_VTK_Format(psi_node, "psi_node",file_name);
+            my_octree.print_VTK_Format(psi_exact, "psi_exact_node",file_name);
+            
+            ////////////////////////////////////////////////////Error-Analysis////////////////////////////////////////////////////////
+            cout<< "+++++++++++++++++++++++++" << endl;
+            //            std::cout<<"L-1 Norm:"<< sols_diff.avg_Abs() <<std::endl;
+            //            std::cout<<"L-max Norm:"<<sols_diff.max_Abs() <<std::endl;
+            cout<<"VOLUME: "<< ls_nodes.volume_In_Negative_Domain() << endl;
+            err_t = ABS(total_psi - total_psi_exact)/pow(2,max_level);
+            cout<<"Error:"<< err_t <<endl;
+            cout<< "+++++++++++++++++++++++++" << endl;
+            
+        }
+        
         filestream << n << "     " << err_t << endl;
-
+        
         n++;
         t+=dt;
         //         change this
         double smallest_dx = xL/std::pow(2,max_level);
         dt = dt_const * std::pow(smallest_dx,2);
-
-        }
+        
+    }
     
     return 0;
 }
-
