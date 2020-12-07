@@ -82,8 +82,8 @@ double dt_const = 1000.;
 ////////////
 // run min 5, max 7 for camera ready
 
-int min_level = 4; //for our adaptive meshing
-int max_level = 8; //for our adaptive meshing
+int min_level = 2; //for our adaptive meshing
+int max_level = 6; //for our adaptive meshing
 ////////////
 
 // System parameters
@@ -650,8 +650,6 @@ int main(int argc, char **argv)
             
             ////////////////////////////////////////////////////Error-Analysis////////////////////////////////////////////////////////
             cout<< "+++++++++++++++++++++++++" << endl;
-            //            std::cout<<"L-1 Norm:"<< sols_diff.avg_Abs() <<std::endl;
-            //            std::cout<<"L-max Norm:"<<sols_diff.max_Abs() <<std::endl;
             cout<<"VOLUME: "<< ls_nodes.volume_In_Negative_Domain() << endl;
             err_t = ABS(total_psi - total_psi_exact)/pow(2,max_level);
             cout<<"Error:"<< err_t <<endl;
