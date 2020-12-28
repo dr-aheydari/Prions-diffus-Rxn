@@ -424,42 +424,40 @@ int main(int argc, char **argv)
                 t+=dt;
                 rhs.CHK_NAN();
 
-/* This is our modification to FV
- * Since we are trying to study the traditional one, we turn it off
-//        #pragma omp parallel for
-//                for (int i = 0; i < my_octree.number_Of_Leaves(); i++) //because we got adding array operator, just inbetween step
-//                    {
-//                        CaslInt c  = my_octree.leaf2cell(i);
-//                        const OctCell& C = my_octree.get_Cell(c);
-//                        // need to find the Vin and Vinp1 volumes
-//                        Cube3 cube;
-//                        // this is the cell C_i
-//                        cube.x0 = my_octree.x_fr_i(C.imin());
-//                        cube.x1 = my_octree.x_fr_i(C.imax());
-//                        cube.y0 = my_octree.y_fr_j(C.jmin());
-//                        cube.y1 = my_octree.y_fr_j(C.jmax());
-//                        cube.z0 = my_octree.z_fr_k(C.kmin());
-//                        cube.z1 = my_octree.z_fr_k(C.kmax());
-
-//                        // this is the value of the level set a the corners of the cube
-//                        OctValue leveset_nm1_values(level_set_nm1(my_octree.get_Cell(c).node_mmm()),level_set_nm1(my_octree.get_Cell(c).node_mmp()),
-//                                                    level_set_nm1(my_octree.get_Cell(c).node_mpm()),level_set_nm1(my_octree.get_Cell(c).node_mpp()),
-//                                                    level_set_nm1(my_octree.get_Cell(c).node_pmm()),level_set_nm1(my_octree.get_Cell(c).node_pmp()),
-//                                                    level_set_nm1(my_octree.get_Cell(c).node_ppm()),level_set_nm1(my_octree.get_Cell(c).node_ppp()));
-
-//                        double Vnm1 = cube.volume_In_Negative_Domain(leveset_nm1_values);
-//                        OctValue leveset_n_values(level_set_n(my_octree.get_Cell(c).node_mmm()),level_set_n(my_octree.get_Cell(c).node_mmp()),
-//                                                  level_set_n(my_octree.get_Cell(c).node_mpm()),level_set_n(my_octree.get_Cell(c).node_mpp()),
-//                                                  level_set_n(my_octree.get_Cell(c).node_pmm()),level_set_n(my_octree.get_Cell(c).node_pmp()),
-//                                                  level_set_n(my_octree.get_Cell(c).node_ppm()),level_set_n(my_octree.get_Cell(c).node_ppp()));
-//                        double Vn = cube.volume_In_Negative_Domain(leveset_n_values);
-
-//                        //integrate and divide by future volume Vn so that its cancel after solver integrate over Vn
-//                        rhs(i) *=Vnm1/MAX(EPSILON,Vn);
-
-//                    }
-
+/* This is our modification to FV in 2D
+ 
+#pragma omp parallel for
+                for (int i = 0; i < my_quadtree.number_Of_Leaves(); i++) //because we got adding array operator, just inbetween step
+                {
+                    CaslInt c  = my_quadtree.leaf2cell(i);
+                    const QuadCell& C = my_quadtree.get_Cell(c);
+                    
+                    // need to find the Vin and Vinp1 volumes
+                    Cube2 cube;
+                    // this is the cell C_i
+                    cube.x0 = my_quadtree.x_fr_i(C.imin());
+                    cube.x1 = my_quadtree.x_fr_i(C.imax());
+                    cube.y0 = my_quadtree.y_fr_j(C.jmin());
+                    cube.y1 = my_quadtree.y_fr_j(C.jmax());
+                    
+                    // this is the value of the level set a the corners of the cube
+                    QuadValue leveset_nm1_values(level_set_nm1(my_quadtree.get_Cell(c).node_mm()),level_set_nm1(my_quadtree.get_Cell(c).node_mp()),
+                                                 level_set_nm1(my_quadtree.get_Cell(c).node_pm()),level_set_nm1(my_quadtree.get_Cell(c).node_pp())
+                                                 );
+                    
+                    double Vnm1 = cube.area_In_Negative_Domain(leveset_nm1_values);
+                    
+                    QuadValue leveset_n_values(level_set_n(my_quadtree.get_Cell(c).node_mm()),level_set_n(my_quadtree.get_Cell(c).node_mp()),
+                                               level_set_n(my_quadtree.get_Cell(c).node_pm()),level_set_n(my_quadtree.get_Cell(c).node_pp())
+                                               );
+                    
+                    double Vn = cube.area_In_Negative_Domain(leveset_n_values);
+                    //integrate and divide by future volume Vn so that its cancel after solver integrate over Vn
+                    rhs(i) *=Vnm1/MAX(EPSILON,Vn);
+                    
+                }
 */
+                
 
 //////////////////////////////////////////////////// Debugging: check for any NaNs////////////////////////////////////////////////////////
 //                rhs.CHK_NAN();
